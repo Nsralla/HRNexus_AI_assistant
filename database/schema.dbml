@@ -1,0 +1,390 @@
+// =========================================
+// HR Assistant LLM - Database Schema
+// =========================================
+// Multi-tenant SaaS architecture with RAG support
+// Supports: Chat history, Document embeddings, Usage tracking, Audit logs
+
+// -------------------------
+// Core: Companies (Multi-tenant)
+// -------------------------
+Table companies {
+  id uuid [primary key]
+  name varchar(255) [not null]
+  plan_type varchar(50) [default: 'free'] // free, basic, premium, enterprise
+  max_users int [default: 10]
+  max_documents int [default: 100]
+  max_storage_gb int [default: 5]
+  is_active boolean [default: true]
+  settings jsonb // custom company configurations
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (name) [name: 'idx_companies_name']
+    (is_active) [name: 'idx_companies_active']
+  }
+}
+
+// -------------------------
+// Core: Users & Authentication
+// -------------------------
+Table users {
+  id uuid [primary key]
+  company_id uuid [not null]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  hashed_password varchar(255) [not null]
+  role varchar(50) [default: 'employee'] // admin, hr_manager, employee
+  is_active boolean [default: true]
+  last_login_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  deleted_at timestamp // soft delete
+
+  Indexes {
+    (company_id, email) [unique, name: 'idx_users_company_email']
+    (company_id, role) [name: 'idx_users_company_role']
+    (is_active) [name: 'idx_users_active']
+  }
+}
+
+Ref: users.company_id > companies.id [delete: cascade]
+
+// -------------------------
+// Auth: Sessions (JWT refresh tokens)
+// -------------------------
+Table sessions {
+  id uuid [primary key]
+  user_id uuid [not null]
+  refresh_token varchar(500) [not null]
+  user_agent varchar(255)
+  ip_address varchar(45)
+  expires_at timestamp [not null]
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id) [name: 'idx_sessions_user']
+    (refresh_token) [name: 'idx_sessions_token']
+    (expires_at) [name: 'idx_sessions_expiry']
+  }
+}
+
+Ref: sessions.user_id > users.id [delete: cascade]
+
+// -------------------------
+// Chat: Conversations
+// -------------------------
+Table chats {
+  id uuid [primary key]
+  user_id uuid [not null]
+  company_id uuid [not null]
+  title varchar(500) [default: 'New Conversation']
+  is_archived boolean [default: false]
+  last_message_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id, created_at) [name: 'idx_chats_user_time']
+    (company_id, created_at) [name: 'idx_chats_company_time']
+    (is_archived) [name: 'idx_chats_archived']
+  }
+}
+
+Ref: chats.user_id > users.id [delete: cascade]
+Ref: chats.company_id > companies.id [delete: cascade]
+
+// -------------------------
+// Chat: Messages
+// -------------------------
+Table messages {
+  id uuid [primary key]
+  chat_id uuid [not null]
+  user_id uuid [not null]
+  content text [not null]
+  role varchar(20) [not null] // user, assistant, system
+  model_used varchar(100) // gpt-4, claude-3-opus, etc.
+  tokens_used int
+  metadata jsonb // sources, citations, card_type, card_data
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (chat_id, created_at) [name: 'idx_messages_chat_time']
+    (user_id, created_at) [name: 'idx_messages_user_time']
+    (role) [name: 'idx_messages_role']
+  }
+}
+
+Ref: messages.chat_id > chats.id [delete: cascade]
+Ref: messages.user_id > users.id [delete: set null]
+
+// -------------------------
+// Chat: Message Feedback
+// -------------------------
+Table message_feedback {
+  id uuid [primary key]
+  message_id uuid [not null]
+  user_id uuid [not null]
+  rating int [not null] // 1 = thumbs up, -1 = thumbs down
+  feedback_text text
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (message_id) [unique, name: 'idx_feedback_message']
+    (user_id) [name: 'idx_feedback_user']
+  }
+}
+
+Ref: message_feedback.message_id > messages.id [delete: cascade]
+Ref: message_feedback.user_id > users.id [delete: cascade]
+
+// -------------------------
+// Chat: Message Attachments
+// -------------------------
+Table attachments {
+  id uuid [primary key]
+  message_id uuid [not null]
+  user_id uuid [not null]
+  file_url varchar(500) [not null]
+  file_name varchar(255) [not null]
+  file_type varchar(50)
+  file_size bigint
+  uploaded_at timestamp [default: `now()`]
+
+  Indexes {
+    (message_id) [name: 'idx_attachments_message']
+    (user_id) [name: 'idx_attachments_user']
+  }
+}
+
+Ref: attachments.message_id > messages.id [delete: cascade]
+Ref: attachments.user_id > users.id [delete: cascade]
+
+// -------------------------
+// Documents: Knowledge Base
+// -------------------------
+Table documents {
+  id uuid [primary key]
+  company_id uuid [not null]
+  title varchar(500) [not null]
+  file_path varchar(1000) [not null]
+  file_type varchar(50) [not null]
+  file_size bigint [not null]
+  status varchar(50) [default: 'pending'] // pending, processing, completed, failed
+  processing_error text
+  metadata jsonb // category, department, tags, etc.
+  uploaded_by uuid [not null]
+  is_deleted boolean [default: false]
+  uploaded_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, uploaded_at) [name: 'idx_documents_company_time']
+    (uploaded_by) [name: 'idx_documents_uploader']
+    (status) [name: 'idx_documents_status']
+    (is_deleted) [name: 'idx_documents_deleted']
+  }
+}
+
+Ref: documents.company_id > companies.id [delete: cascade]
+Ref: documents.uploaded_by > users.id [delete: set null]
+
+// -------------------------
+// RAG: Document Chunks
+// -------------------------
+Table document_chunks {
+  id uuid [primary key]
+  document_id uuid [not null]
+  chunk_index int [not null]
+  content text [not null]
+  chunk_metadata jsonb // page_number, section, heading, etc.
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (document_id, chunk_index) [name: 'idx_chunks_doc_index']
+  }
+}
+
+Ref: document_chunks.document_id > documents.id [delete: cascade]
+
+// -------------------------
+// RAG: Vector Embeddings
+// -------------------------
+Table vector_embeddings {
+  id uuid [primary key]
+  chunk_id uuid [not null]
+  embedding vector(1536) [not null] // OpenAI: 1536, change as needed
+  model_used varchar(100) [not null] // text-embedding-ada-002, etc.
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (chunk_id) [unique, name: 'idx_embeddings_chunk']
+    (embedding) [type: 'ivfflat', name: 'idx_embeddings_vector'] // pgvector index
+  }
+}
+
+Ref: vector_embeddings.chunk_id > document_chunks.id [delete: cascade]
+
+// -------------------------
+// AI: Configuration
+// -------------------------
+Table ai_configs {
+  id uuid [primary key]
+  company_id uuid [not null]
+  config_name varchar(100) [not null] // default, creative, precise, etc.
+  model_name varchar(100) [not null] // gpt-4, claude-3-opus, etc.
+  temperature float [default: 0.7]
+  max_tokens int [default: 2000]
+  top_p float [default: 1.0]
+  system_prompt text [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, config_name) [unique, name: 'idx_ai_configs_company_name']
+    (is_active) [name: 'idx_ai_configs_active']
+  }
+}
+
+Ref: ai_configs.company_id > companies.id [delete: cascade]
+
+// -------------------------
+// HR: Employees
+// -------------------------
+Table employees {
+  id uuid [primary key]
+  company_id uuid [not null]
+  user_id uuid // nullable if not a system user
+  employee_id varchar(100) [not null] // company's internal ID
+  first_name varchar(255) [not null]
+  last_name varchar(255) [not null]
+  email varchar(255)
+  department varchar(100)
+  position varchar(100)
+  manager_id uuid // self-reference
+  hire_date date
+  termination_date date
+  status varchar(50) [default: 'active'] // active, on_leave, terminated
+  metadata jsonb // salary, benefits, performance_reviews, etc.
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, employee_id) [unique, name: 'idx_employees_company_emp_id']
+    (company_id, department) [name: 'idx_employees_department']
+    (user_id) [name: 'idx_employees_user']
+    (manager_id) [name: 'idx_employees_manager']
+    (status) [name: 'idx_employees_status']
+  }
+}
+
+Ref: employees.company_id > companies.id [delete: cascade]
+Ref: employees.user_id > users.id [delete: set null]
+Ref: employees.manager_id > employees.id [delete: set null]
+
+// -------------------------
+// HR: Policies
+// -------------------------
+Table policies {
+  id uuid [primary key]
+  company_id uuid [not null]
+  title varchar(500) [not null]
+  content text [not null]
+  category varchar(100) [not null] // leave, benefits, conduct, remote_work, etc.
+  version int [default: 1]
+  effective_date date [not null]
+  expiry_date date
+  is_active boolean [default: true]
+  created_by uuid [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, category) [name: 'idx_policies_category']
+    (company_id, is_active) [name: 'idx_policies_active']
+    (effective_date) [name: 'idx_policies_effective']
+  }
+}
+
+Ref: policies.company_id > companies.id [delete: cascade]
+Ref: policies.created_by > users.id [delete: set null]
+
+// -------------------------
+// Usage: Tracking & Billing
+// -------------------------
+Table usage_logs {
+  id uuid [primary key]
+  user_id uuid [not null]
+  company_id uuid [not null]
+  chat_id uuid
+  message_id uuid
+  action_type varchar(50) [not null] // chat, document_upload, search, etc.
+  model_used varchar(100)
+  tokens_used int
+  cost decimal(10,6) // in USD
+  metadata jsonb
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, created_at) [name: 'idx_usage_company_time']
+    (user_id, created_at) [name: 'idx_usage_user_time']
+    (action_type) [name: 'idx_usage_action']
+  }
+}
+
+Ref: usage_logs.user_id > users.id [delete: cascade]
+Ref: usage_logs.company_id > companies.id [delete: cascade]
+Ref: usage_logs.chat_id > chats.id [delete: set null]
+Ref: usage_logs.message_id > messages.id [delete: set null]
+
+// -------------------------
+// Security: Audit Logs
+// -------------------------
+Table audit_logs {
+  id uuid [primary key]
+  user_id uuid
+  company_id uuid [not null]
+  action varchar(100) [not null] // login, logout, upload_document, delete_chat, etc.
+  resource_type varchar(50) // user, document, chat, message, etc.
+  resource_id uuid
+  ip_address varchar(45)
+  user_agent varchar(255)
+  metadata jsonb // detailed action info
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, created_at) [name: 'idx_audit_company_time']
+    (user_id, created_at) [name: 'idx_audit_user_time']
+    (action) [name: 'idx_audit_action']
+    (resource_type, resource_id) [name: 'idx_audit_resource']
+  }
+}
+
+Ref: audit_logs.user_id > users.id [delete: set null]
+Ref: audit_logs.company_id > companies.id [delete: cascade]
+
+// -------------------------
+// System: Notifications
+// -------------------------
+Table notifications {
+  id uuid [primary key]
+  user_id uuid [not null]
+  company_id uuid [not null]
+  type varchar(50) [not null] // info, warning, error, success
+  title varchar(255) [not null]
+  message text [not null]
+  is_read boolean [default: false]
+  action_url varchar(500)
+  metadata jsonb
+  created_at timestamp [default: `now()`]
+  read_at timestamp
+
+  Indexes {
+    (user_id, is_read, created_at) [name: 'idx_notifications_user_unread']
+    (company_id, created_at) [name: 'idx_notifications_company']
+  }
+}
+
+Ref: notifications.user_id > users.id [delete: cascade]
+Ref: notifications.company_id > companies.id [delete: cascade]

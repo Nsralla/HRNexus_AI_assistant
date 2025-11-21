@@ -1,0 +1,88 @@
+// =========================================
+// HR Assistant - Bootcamp Schema
+// =========================================
+// Simple multi-tenant schema for bootcamp project
+// Vector embeddings stored in ChromaDB (external)
+
+// -------------------------
+// Companies
+// -------------------------
+Table companies {
+  id uuid [primary key]
+  name varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+}
+
+// -------------------------
+// Users
+// -------------------------
+Table users {
+  id uuid [primary key]
+  company_id uuid [not null]
+  name varchar(255) [not null]
+  email varchar(255) [not null]
+  hashed_password varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, email) [unique]
+  }
+}
+
+Ref: users.company_id > companies.id
+
+// -------------------------
+// Chats
+// -------------------------
+Table chats {
+  id uuid [primary key]
+  user_id uuid [not null]
+  title varchar(500) [default: 'New Conversation']
+  created_at timestamp [default: `now()`]
+}
+
+Ref: chats.user_id > users.id
+
+// -------------------------
+// Messages
+// -------------------------
+Table messages {
+  id uuid [primary key]
+  chat_id uuid [not null]
+  content text [not null]
+  role varchar(20) [not null] // user, assistant
+  created_at timestamp [default: `now()`]
+}
+
+Ref: messages.chat_id > chats.id
+
+// -------------------------
+// Message Feedback
+// -------------------------
+Table message_feedback {
+  id uuid [primary key]
+  message_id uuid [not null]
+  rating int [not null] // 1 = thumbs up, -1 = thumbs down
+  created_at timestamp [default: `now()`]
+}
+
+Ref: message_feedback.message_id > messages.id
+
+// -------------------------
+// Documents (File Metadata)
+// -------------------------
+// Note: Actual files stored in uploads/ folder or Supabase Storage
+// Embeddings stored in ChromaDB
+Table documents {
+  id uuid [primary key]
+  company_id uuid [not null]
+  user_id uuid [not null]
+  filename varchar(500) [not null]
+  file_path varchar(1000) [not null]
+  file_type varchar(50) [not null]
+  file_size bigint [not null]
+  uploaded_at timestamp [default: `now()`]
+}
+
+Ref: documents.company_id > companies.id
+Ref: documents.user_id > users.id

@@ -1,0 +1,92 @@
+// =========================================
+// HR Assistant LLM - Simple Schema (MVP)
+// =========================================
+
+// -------------------------
+// Companies (Multi-tenant)
+// -------------------------
+Table companies {
+  id uuid [primary key]
+  name varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+}
+
+// -------------------------
+// Users
+// -------------------------
+Table users {
+  id uuid [primary key]
+  company_id uuid [not null]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  hashed_password varchar(255) [not null]
+  role varchar(50) [default: 'employee'] // admin, hr_manager, employee
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (company_id, email) [unique]
+  }
+}
+
+Ref: users.company_id > companies.id
+
+// -------------------------
+// Chats
+// -------------------------
+Table chats {
+  id uuid [primary key]
+  user_id uuid [not null]
+  company_id uuid [not null]
+  title varchar(500) [default: 'New Conversation']
+  created_at timestamp [default: `now()`]
+}
+
+Ref: chats.user_id > users.id
+Ref: chats.company_id > companies.id
+
+// -------------------------
+// Messages
+// -------------------------
+Table messages {
+  id uuid [primary key]
+  chat_id uuid [not null]
+  user_id uuid [not null]
+  content text [not null]
+  role varchar(20) [not null] // user, assistant, system
+  created_at timestamp [default: `now()`]
+}
+
+Ref: messages.chat_id > chats.id
+Ref: messages.user_id > users.id
+
+// -------------------------
+// Documents (Knowledge Base)
+// -------------------------
+Table documents {
+  id uuid [primary key]
+  company_id uuid [not null]
+  title varchar(500) [not null]
+  file_path varchar(1000) [not null]
+  file_type varchar(50) [not null]
+  uploaded_by uuid [not null]
+  uploaded_at timestamp [default: `now()`]
+}
+
+Ref: documents.company_id > companies.id
+Ref: documents.uploaded_by > users.id
+
+// -------------------------
+// Document Chunks (for RAG)
+// -------------------------
+// Note: Chunk content and embeddings stored in ChromaDB
+// This table only tracks metadata for SQL queries
+Table document_chunks {
+  id uuid [primary key]
+  document_id uuid [not null]
+  chunk_index int [not null]
+  content text [not null]
+  chroma_id varchar(255) [not null] // Reference to ChromaDB document ID
+  created_at timestamp [default: `now()`]
+}
+
+Ref: document_chunks.document_id > documents.id
