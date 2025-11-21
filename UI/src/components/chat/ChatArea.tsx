@@ -13,7 +13,7 @@ interface Message {
 }
 
 const ChatArea = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages] = useState<Message[]>([
     {
       id: 1,
       type: 'assistant',
@@ -21,7 +21,7 @@ const ChatArea = () => {
       timestamp: new Date()
     }
   ]);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
