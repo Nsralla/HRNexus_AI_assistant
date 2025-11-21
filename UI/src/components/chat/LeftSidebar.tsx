@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+// import { useState } from 'react';
 
 const LeftSidebar = ({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) => {
-  const [activeSection] = useState('quick-actions');
+  // const [activeSection] = useState('quick-actions');
 
   const conversations = {
     today: [
