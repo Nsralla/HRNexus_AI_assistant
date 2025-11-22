@@ -6,7 +6,7 @@ import os
 
 from core.database import engine, Base, get_db
 from models import Company, User, Chat, Message, MessageFeedback, Document
-from routers import auth
+from routers import auth, chat
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +34,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(chat.router)
 
 # Health check endpoint
 @app.get("/health")
