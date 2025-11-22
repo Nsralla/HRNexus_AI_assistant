@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { EmployeeCard, PolicyCard, AnalyticsCard, TaskCard, SQLCard } from './ResponseCards';
 import NexusLogo from '../shared/NexusLogo';
+import type { MessageResponse } from '../../../services/chat.service';
 
 interface Message {
-  id: number;
+  id: string;
   type: 'user' | 'assistant';
   text: string;
   cardType?: 'employee' | 'policy' | 'analytics' | 'task' | 'sql';
@@ -12,17 +13,29 @@ interface Message {
   timestamp: Date;
 }
 
-const ChatArea = () => {
-  const [messages] = useState<Message[]>([
-    {
-      id: 1,
-      type: 'assistant',
-      text: "👋 Hello! I'm your HR AI Assistant. I can help you with employee records, policies, analytics, and more. What would you like to know?",
-      timestamp: new Date()
-    }
-  ]);
-  const [isTyping] = useState(false);
+interface ChatAreaProps {
+  messages: MessageResponse[];
+  isLoading: boolean;
+}
+
+const ChatArea = ({ messages: apiMessages = [], isLoading = false }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const messages: Message[] = apiMessages.length > 0
+    ? apiMessages.map(msg => ({
+        id: msg.id,
+        type: msg.role as 'user' | 'assistant',
+        text: msg.content,
+        timestamp: new Date(msg.created_at)
+      }))
+    : [
+        {
+          id: '1',
+          type: 'assistant',
+          text: "👋 Hello! I'm your HR AI Assistant. I can help you with employee records, policies, analytics, and more. What would you like to know?",
+          timestamp: new Date()
+        }
+      ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,7 +113,7 @@ const ChatArea = () => {
         </AnimatePresence>
 
           {/* Typing Indicator */}
-          {isTyping && (
+          {isLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

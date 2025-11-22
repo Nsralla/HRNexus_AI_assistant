@@ -1,7 +1,12 @@
 import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
 
-const InputArea = () => {
+interface InputAreaProps {
+  onSendMessage: (content: string) => void;
+  disabled?: boolean;
+}
+
+const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
   const [inputValue, setInputValue] = useState('');
   const [showPlugins, setShowPlugins] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,8 +29,8 @@ const InputArea = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      console.log('Sending:', inputValue);
+    if (inputValue.trim() && !disabled) {
+      onSendMessage(inputValue);
       setInputValue('');
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -159,7 +164,8 @@ const InputArea = () => {
               onChange={handleInput}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything... e.g. Who's on leave next week?"
-              className="flex-grow bg-transparent resize-none focus:outline-none text-gray-800 placeholder-gray-400 max-h-[150px] min-h-[24px] leading-relaxed"
+              disabled={disabled}
+              className="flex-grow bg-transparent resize-none focus:outline-none text-gray-800 placeholder-gray-400 max-h-[150px] min-h-[24px] leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
               rows={1}
             />
 
@@ -168,9 +174,9 @@ const InputArea = () => {
               type="submit"
               whileHover={{ scale: 1.1, boxShadow: '0 0 20px rgba(74, 125, 255, 0.4)' }}
               whileTap={{ scale: 0.95 }}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || disabled}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                inputValue.trim()
+                inputValue.trim() && !disabled
                   ? 'bg-gradient-to-r from-accent to-purple-600 text-white shadow-lg'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}

@@ -7,7 +7,7 @@ from core.auth import get_current_user
 from models.user import User
 from models.chat import Chat
 from models.message import Message
-
+from uuid import UUID
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
 
@@ -17,17 +17,24 @@ async def create_chat(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new chat conversation"""
-    new_chat = Chat(
-        user_id=current_user.id,
-        company_id=current_user.company_id,
-        title=chat_data.title
-    )
-    db.add(new_chat)
-    db.commit()
-    db.refresh(new_chat)
+    try:
+        """Create a new chat conversation"""
+        new_chat = Chat(
+            user_id=current_user.id,
+            company_id=current_user.company_id,
+            title=chat_data.title
+        )
+        db.add(new_chat)
+        db.commit()
+        db.refresh(new_chat)
+        return new_chat
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
-    return new_chat
+   
 
 
 @router.get("/", response_model=list[ChatResponse])
@@ -101,20 +108,40 @@ async def get_chat_messages(
     current_user: User = Depends(get_current_user)
 ):
     """Get all messages for a specific chat"""
+    
+    try:
+        # validate it's uuid
+        if not chat_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Chat ID is required"
+            )
+        
+        chat_uuid = UUID(chat_id)
+        if not chat_uuid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid chat ID"
+            )
+        
+        # Verify chat exists and belongs to current user
+        chat = db.query(Chat).filter(Chat.id == chat_id).first()
+        if not chat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chat not found"
+            )
 
-    # Verify chat exists and belongs to current user
-    chat = db.query(Chat).filter(Chat.id == chat_id).first()
-    if not chat:
+        if chat.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to access this chat"
+            )
+
+        messages = db.query(Message).filter(Message.chat_id == chat_id).order_by(Message.created_at.asc()).all()
+        return messages
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chat not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
-
-    if chat.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to access this chat"
-        )
-
-    messages = db.query(Message).filter(Message.chat_id == chat_id).order_by(Message.created_at.asc()).all()
-    return messages

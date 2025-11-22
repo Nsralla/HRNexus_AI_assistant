@@ -251,6 +251,10 @@ const LoginPage = () => {
             </svg>
             <span>Enterprise-grade encryption</span>
           </motion.div>
+
+          <button>
+            
+          </button>
         </motion.div>
       </div>
     </div>
