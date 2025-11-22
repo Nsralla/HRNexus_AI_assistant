@@ -1,4 +1,4 @@
-import { apiRequest, setAuthToken, removeAuthToken, getApiUrl } from './api.config';
+import { apiRequest, setAuthToken, removeAuthToken } from './api.config';
 
 export interface UserResponse {
   id: string;
