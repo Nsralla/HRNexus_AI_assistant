@@ -94,13 +94,13 @@ const LeftSidebar = ({
     setDeleteConfirmId(null);
   };
 
-  const quickActions = [
-    { icon: '🔍', label: 'HR Policies', color: 'from-blue-500 to-cyan-500' },
-    { icon: '📄', label: 'Employee Records', color: 'from-purple-500 to-pink-500' },
-    { icon: '📝', label: 'Leaves & Requests', color: 'from-orange-500 to-red-500' },
-    { icon: '🏢', label: 'Departments & Teams', color: 'from-green-500 to-emerald-500' },
-    { icon: '📊', label: 'HR Analytics', color: 'from-indigo-500 to-purple-500' }
-  ];
+  // const quickActions = [
+  //   { icon: '🔍', label: 'HR Policies', color: 'from-blue-500 to-cyan-500' },
+  //   { icon: '📄', label: 'Employee Records', color: 'from-purple-500 to-pink-500' },
+  //   { icon: '📝', label: 'Leaves & Requests', color: 'from-orange-500 to-red-500' },
+  //   { icon: '🏢', label: 'Departments & Teams', color: 'from-green-500 to-emerald-500' },
+  //   { icon: '📊', label: 'HR Analytics', color: 'from-indigo-500 to-purple-500' }
+  // ];
 
   const integrations = [
     { name: 'Jira', icon: 'J', connected: true },
