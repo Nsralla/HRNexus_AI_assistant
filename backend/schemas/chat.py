@@ -5,6 +5,9 @@ import uuid
 class ChatCreate(BaseModel):
     title: str = "New Conversation"
 
+class ChatUpdate(BaseModel):
+    title: str
+
 class ChatResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID

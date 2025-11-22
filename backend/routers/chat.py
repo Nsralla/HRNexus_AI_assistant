@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from schemas.message import MessageCreate, MessageResponse
-from schemas.chat import ChatCreate, ChatResponse
+from schemas.chat import ChatCreate, ChatUpdate, ChatResponse
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.auth import get_current_user
@@ -45,6 +45,96 @@ async def get_user_chats(
     """Get all chats for the current user"""
     chats = db.query(Chat).filter(Chat.user_id == current_user.id).order_by(Chat.created_at.desc()).all()
     return chats
+
+
+@router.patch("/{chat_id}", response_model=ChatResponse)
+async def update_chat(
+    chat_id: str,
+    chat_data: ChatUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update chat title"""
+    try:
+        # Validate UUID
+        chat_uuid = UUID(chat_id)
+
+        # Verify chat exists and belongs to current user
+        chat = db.query(Chat).filter(Chat.id == chat_uuid).first()
+        if not chat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chat not found"
+            )
+
+        if chat.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to update this chat"
+            )
+
+        # Update chat title
+        chat.title = chat_data.title
+        db.commit()
+        db.refresh(chat)
+
+        return chat
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid chat ID"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.delete("/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_chat(
+    chat_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a chat and all its messages"""
+    try:
+        # Validate UUID
+        chat_uuid = UUID(chat_id)
+
+        # Verify chat exists and belongs to current user
+        chat = db.query(Chat).filter(Chat.id == chat_uuid).first()
+        if not chat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chat not found"
+            )
+
+        if chat.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this chat"
+            )
+
+        # Delete all messages associated with the chat
+        db.query(Message).filter(Message.chat_id == chat_uuid).delete()
+
+        # Delete the chat
+        db.delete(chat)
+        db.commit()
+
+        return None
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid chat ID"
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @router.post("/message", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)

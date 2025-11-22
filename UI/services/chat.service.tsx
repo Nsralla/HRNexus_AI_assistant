@@ -27,6 +27,10 @@ export interface MessageCreate {
   role?: 'user' | 'assistant';
 }
 
+export interface ChatUpdate {
+  title: string;
+}
+
 export const chatService = {
   async createChat(data: ChatCreate): Promise<ChatResponse> {
     return apiRequest<ChatResponse>('/api/chat/', {
@@ -38,6 +42,19 @@ export const chatService = {
   async getUserChats(): Promise<ChatResponse[]> {
     return apiRequest<ChatResponse[]>('/api/chat/', {
       method: 'GET',
+    });
+  },
+
+  async updateChat(chatId: string, data: ChatUpdate): Promise<ChatResponse> {
+    return apiRequest<ChatResponse>(`/api/chat/${chatId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteChat(chatId: string): Promise<void> {
+    await apiRequest<void>(`/api/chat/${chatId}`, {
+      method: 'DELETE',
     });
   },
 

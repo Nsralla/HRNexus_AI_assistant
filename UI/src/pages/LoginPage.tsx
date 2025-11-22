@@ -2,19 +2,29 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NexusLogo from '../components/shared/NexusLogo';
+import { authService } from '../../services/auth.service';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login:', { email, password, rememberMe });
-    // For demo, navigate to chat
-    navigate('/chat');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await authService.login({ email, password });
+      navigate('/chat');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -133,6 +143,17 @@ const LoginPage = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+
               {/* Email Input */}
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -184,11 +205,24 @@ const LoginPage = () => {
               {/* Login Button */}
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02, boxShadow: '0 10px 40px rgba(74, 125, 255, 0.3)' }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 bg-gradient-to-r from-accent to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                disabled={isLoading}
+                whileHover={{ scale: isLoading ? 1 : 1.02, boxShadow: isLoading ? undefined : '0 10px 40px rgba(74, 125, 255, 0.3)' }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                className={`w-full py-4 bg-gradient-to-r from-accent to-blue-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all ${
+                  isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
               >
-                Sign In
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
               </motion.button>
 
               {/* Divider */}

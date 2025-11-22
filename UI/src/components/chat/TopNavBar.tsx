@@ -1,7 +1,16 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import NexusLogo from "../shared/NexusLogo";
+import { authService } from "../../../services/auth.service";
 
 const TopNavBar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -40,14 +49,6 @@ const TopNavBar = () => {
 
       {/* Right - Actions */}
       <div className="flex items-center gap-3">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 bg-neutral rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors relative"
-        >
-          <span className="text-xl">🔔</span>
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </motion.button>
 
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -55,6 +56,16 @@ const TopNavBar = () => {
           className="w-10 h-10 bg-neutral rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
         >
           <span className="text-xl">⚙️</span>
+        </motion.button>
+
+        <motion.button
+          onClick={handleLogout}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          title="Logout"
+          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm transition-colors"
+        >
+          Logout
         </motion.button>
 
         <motion.div
