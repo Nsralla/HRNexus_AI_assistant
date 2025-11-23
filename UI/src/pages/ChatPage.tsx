@@ -17,6 +17,7 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,6 +131,7 @@ const ChatPage = () => {
   const handleNewChat = async () => {
     try {
       setError(null);
+      setIsCreatingChat(true);
       const newChat = await chatService.createChat({ title: 'New Conversation' });
       setChats((prev) => [newChat, ...prev]);
       setCurrentChatId(newChat.id);
@@ -138,6 +140,8 @@ const ChatPage = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create new chat';
       setError(errorMessage);
       console.error('Failed to create new chat:', err);
+    } finally {
+      setIsCreatingChat(false);
     }
   };
 
@@ -218,6 +222,7 @@ const ChatPage = () => {
           onChatSelect={handleChatSelect}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
+          isCreatingChat={isCreatingChat}
         />
 
         <main

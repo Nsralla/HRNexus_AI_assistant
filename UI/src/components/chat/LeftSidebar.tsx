@@ -15,6 +15,7 @@ interface LeftSidebarProps {
   onChatSelect: (chatId: string) => void;
   onNewChat: () => void;
   onDeleteChat: (chatId: string) => void;
+  isCreatingChat?: boolean;
 }
 
 const LeftSidebar = ({
@@ -24,7 +25,8 @@ const LeftSidebar = ({
   currentChatId,
   onChatSelect,
   onNewChat,
-  onDeleteChat
+  onDeleteChat,
+  isCreatingChat = false
 }: LeftSidebarProps) => {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -132,12 +134,25 @@ const LeftSidebar = ({
 
           {/* New Chat Button */}
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: isCreatingChat ? 1 : 1.02 }}
+            whileTap={{ scale: isCreatingChat ? 1 : 0.98 }}
             onClick={onNewChat}
-            className="w-full py-3 bg-gradient-to-r from-accent to-purple-600 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transition-all"
+            disabled={isCreatingChat}
+            className={`w-full py-3 bg-gradient-to-r from-accent to-purple-600 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${
+              isCreatingChat ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-            + New Chat
+            {isCreatingChat ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating...
+              </>
+            ) : (
+              '+ New Chat'
+            )}
           </motion.button>
 
           {/* Quick Actions */}

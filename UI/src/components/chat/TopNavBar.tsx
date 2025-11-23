@@ -37,9 +37,7 @@ const TopNavBar = () => {
           className="px-4 py-2 bg-neutral rounded-xl border border-gray-300 text-sm font-medium text-primary cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option>HR Assistant – Live</option>
-          <option>HR Assistant – SQL Mode</option>
-          <option>HR Assistant – Policy Mode</option>
-          <option>HR Assistant – Creative Mode</option>
+       
         </motion.select>
         <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -51,14 +49,6 @@ const TopNavBar = () => {
       <div className="flex items-center gap-3">
 
         <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 bg-neutral rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
-        >
-          <span className="text-xl">⚙️</span>
-        </motion.button>
-
-        <motion.button
           onClick={handleLogout}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -68,12 +58,12 @@ const TopNavBar = () => {
           Logout
         </motion.button>
 
-        <motion.div
+        {/* <motion.div
           whileHover={{ scale: 1.05 }}
           className="w-10 h-10 bg-gradient-to-br from-accent to-purple-600 rounded-full flex items-center justify-center text-white font-bold cursor-pointer"
         >
           JD
-        </motion.div>
+        </motion.div> */}
       </div>
     </motion.nav>
   );

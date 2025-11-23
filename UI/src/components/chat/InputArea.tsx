@@ -14,13 +14,10 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
   const plugins = [
     { icon: '👥', label: 'Ask about employees', color: 'from-blue-500 to-cyan-500' },
     { icon: '📊', label: 'Generate report', color: 'from-purple-500 to-pink-500' },
-    { icon: '💾', label: 'Query HRIS DB', color: 'from-green-500 to-emerald-500' },
     { icon: '🔍', label: 'Search Jira/Confluence', color: 'from-orange-500 to-red-500' }
   ];
 
   const modes = [
-    { value: 'creative', label: 'Creative', icon: '✨' },
-    { value: 'strict', label: 'Strict HR Rules', icon: '📋' },
     { value: 'sql', label: 'SQL Mode', icon: '💾' },
     { value: 'policy', label: 'Policy Mode', icon: '📄' }
   ];

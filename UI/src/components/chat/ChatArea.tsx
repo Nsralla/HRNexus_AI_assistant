@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { EmployeeCard, PolicyCard, AnalyticsCard, TaskCard, SQLCard } from './ResponseCards';
 import NexusLogo from '../shared/NexusLogo';
 import type { MessageResponse } from '../../../services/chat.service';
@@ -94,7 +96,70 @@ const ChatArea = ({ messages: apiMessages = [], isLoading = false }: ChatAreaPro
                         : 'bg-white/80 backdrop-blur-lg text-gray-800 border border-gray-200 rounded-bl-md shadow-soft'
                     }`}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                    {message.type === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({children}) => <p className="text-sm leading-relaxed mb-2 last:mb-0">{children}</p>,
+                            strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                            ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                            li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
+                            h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                            h3: ({children}) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                            table: ({children}) => (
+                              <div className="overflow-x-auto my-3">
+                                <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            thead: ({children}) => (
+                              <thead className="bg-gray-50">
+                                {children}
+                              </thead>
+                            ),
+                            tbody: ({children}) => (
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {children}
+                              </tbody>
+                            ),
+                            tr: ({children}) => (
+                              <tr className="hover:bg-gray-50">
+                                {children}
+                              </tr>
+                            ),
+                            th: ({children}) => (
+                              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                {children}
+                              </th>
+                            ),
+                            td: ({children}) => (
+                              <td className="px-4 py-2 text-sm text-gray-700">
+                                {children}
+                              </td>
+                            ),
+                            code: ({children, className}) => {
+                              const isInline = !className?.includes('language-');
+                              return isInline ? (
+                                <code className="px-1.5 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono">
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className="block p-3 bg-gray-50 rounded-lg text-xs font-mono overflow-x-auto">
+                                  {children}
+                                </code>
+                              );
+                            }
+                          }}
+                        >
+                          {message.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                    )}
                   </motion.div>
 
                   {/* Render Card if present */}
