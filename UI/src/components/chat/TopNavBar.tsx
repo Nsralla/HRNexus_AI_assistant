@@ -19,7 +19,10 @@ const TopNavBar = () => {
     >
       {/* Left - Logo */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
+        <div
+          onClick={() => navigate('/')}
+          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <NexusLogo size={40} animate={false} />
           <div>
             <h1 className="text-xl font-bold text-primary">HR Nexus</h1>
@@ -30,21 +33,7 @@ const TopNavBar = () => {
         </div>
       </div>
 
-      {/* Center - Model Selector */}
-      <div className="hidden md:flex items-center gap-2">
-        <motion.select
-          whileHover={{ scale: 1.02 }}
-          className="px-4 py-2 bg-neutral rounded-xl border border-gray-300 text-sm font-medium text-primary cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent"
-        >
-          <option>HR Assistant – Live</option>
-       
-        </motion.select>
-        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-xs font-medium text-green-700">Online</span>
-        </div>
-      </div>
-
+     
       {/* Right - Actions */}
       <div className="flex items-center gap-3">
 

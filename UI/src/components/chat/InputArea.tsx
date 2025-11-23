@@ -12,15 +12,10 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const plugins = [
-    { icon: '👥', label: 'Ask about employees', color: 'from-blue-500 to-cyan-500' },
     { icon: '📊', label: 'Generate report', color: 'from-purple-500 to-pink-500' },
-    { icon: '🔍', label: 'Search Jira/Confluence', color: 'from-orange-500 to-red-500' }
   ];
 
-  const modes = [
-    { value: 'sql', label: 'SQL Mode', icon: '💾' },
-    { value: 'policy', label: 'Policy Mode', icon: '📄' }
-  ];
+ 
 
   const [selectedMode, setSelectedMode] = useState('creative');
 
@@ -50,36 +45,15 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
   };
 
   return (
-    <div className="bg-white border-t border-gray-200 px-6 py-4 w-full">
+    <div className="px-6 py-4 w-full">
       <div className="max-w-4xl mx-auto w-full">
-        {/* Mode Selector */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs text-gray-500 font-medium">AI Mode:</span>
-          <div className="flex gap-2">
-            {modes.map((mode) => (
-              <motion.button
-                key={mode.value}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedMode(mode.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedMode === mode.value
-                    ? 'bg-accent text-white shadow-md'
-                    : 'bg-neutral text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <span className="mr-1">{mode.icon}</span>
-                {mode.label}
-              </motion.button>
-            ))}
-          </div>
-        </div>
+
 
         {/* Input Container */}
         <form onSubmit={handleSubmit} className="relative">
           <motion.div
             whileFocus={{ boxShadow: '0 0 0 3px rgba(74, 125, 255, 0.1)' }}
-            className="bg-neutral rounded-3xl shadow-soft border border-gray-300 flex items-end gap-3 px-6 py-4 transition-all"
+            className="rounded-3xl border border-gray-300 flex items-end gap-3 px-6 py-4 transition-all"
           >
             {/* Left Actions */}
             <div className="flex items-center gap-2 pb-1">

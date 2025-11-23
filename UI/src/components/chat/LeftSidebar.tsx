@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import NexusLogo from '../shared/NexusLogo';
+import { authService } from '../../../services/auth.service';
 
 interface Chat {
   id: string;
@@ -28,8 +31,13 @@ const LeftSidebar = ({
   onDeleteChat,
   isCreatingChat = false
 }: LeftSidebarProps) => {
-
+  const navigate = useNavigate();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
 
   // Group chats by time period
   const groupedChats = useMemo(() => {
@@ -118,7 +126,7 @@ const LeftSidebar = ({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={onToggle}
-        className="fixed top-20 left-4 z-50 w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg"
+        className="fixed top-4 left-4 z-50 w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg"
       >
         {isOpen ? '✕' : '☰'}
       </motion.button>
@@ -130,7 +138,34 @@ const LeftSidebar = ({
         transition={{ type: 'spring', damping: 20 }}
         className="fixed top-0 left-0 h-screen w-72 bg-[#0D0F11] text-white z-40 overflow-y-auto"
       >
-        <div className="pt-20 p-6 space-y-6">
+        <div className="pt-16 p-6 space-y-6">
+          {/* Logo and Logout Section */}
+          <div className="flex flex-col gap-4 pb-4 border-b border-gray-700">
+            {/* Logo */}
+            <div
+              onClick={() => navigate('/')}
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <NexusLogo size={40} animate={false} />
+              <div>
+                <h1 className="text-xl font-bold text-white">HR Nexus</h1>
+                <p className="text-xs text-gray-400">
+                  Powered by LLM + RAG + LangGraph
+                </p>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <motion.button
+              onClick={handleLogout}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Logout"
+              className="w-full px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm transition-colors"
+            >
+              Logout
+            </motion.button>
+          </div>
 
           {/* New Chat Button */}
           <motion.button

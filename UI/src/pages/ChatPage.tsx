@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TopNavBar from '../components/chat/TopNavBar';
 import LeftSidebar from '../components/chat/LeftSidebar';
 import ChatArea from '../components/chat/ChatArea';
 import InputArea from '../components/chat/InputArea';
@@ -190,12 +189,10 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-neutral">
-      <TopNavBar />
-
+    <div className="h-screen flex overflow-hidden bg-neutral">
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between">
+        <div className="fixed top-0 left-0 right-0 bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between z-50">
           <div className="flex items-center gap-2 text-red-700">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -213,7 +210,7 @@ const ChatPage = () => {
         </div>
       )}
 
-      <div className="flex-grow flex overflow-hidden relative">
+      <div className="flex-grow flex overflow-hidden relative w-full">
         <LeftSidebar
           isOpen={leftSidebarOpen}
           onToggle={() => setLeftSidebarOpen(!leftSidebarOpen)}
