@@ -8,7 +8,7 @@ from models.user import User
 from models.chat import Chat
 from models.message import Message
 from uuid import UUID
-from services.chat_pipeline import chat_pipe
+# from services.chat_pipeline import chat_pipe
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -190,12 +190,12 @@ async def create_message(
     ]
 
     # Send to LangGraph pipeline with chat history
-    response = await chat_pipe.run(message_data.content, chat_history)
+    # response = await chat_pipe.run(message_data.content, chat_history)
     # Create assistant response
     assistant_response = Message(
         chat_id=message_data.chat_id,
         user_id=current_user.id,
-        content=response or "AI Response coming soon",
+        content="AI Response coming soon",
         role="assistant"
     )
     db.add(assistant_response)
