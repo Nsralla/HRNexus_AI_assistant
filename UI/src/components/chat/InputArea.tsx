@@ -17,7 +17,7 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
 
  
 
-  const [selectedMode, setSelectedMode] = useState('creative');
+  // const [selectedMode, setSelectedMode] = useState('creative');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
