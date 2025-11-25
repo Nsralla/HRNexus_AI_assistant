@@ -11,6 +11,8 @@ python-multipart
 chromadb
 langchain
 langchain-openai
+langchain-core
+langgraph
 openai
 python-dotenv
 email-validator
