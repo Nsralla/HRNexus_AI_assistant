@@ -5,18 +5,25 @@ This module handles loading and processing data from multiple sources:
 1. JSON files from Google Drive (for Colab notebook environment)
 2. Markdown files from the local kb/ folder
 3. Combines all data into LangChain Documents for RAG processing
+4. Creates embeddings and saves to vector database (ChromaDB)
 
 Usage:
-    # For Colab Notebook (with Google Drive):
+    # For Colab Notebook (with Google Drive and vector database):
     loader = RAGDataLoader()
-    documents = await loader.load_all_documents(
+    documents, split_docs, vectorstore = await loader.save_to_vector_database(
         google_drive_url="https://drive.google.com/...",
         download_from_drive=True
     )
     
-    # For Local Backend (skip Google Drive):
+    # For Local Backend (with persistent vector database):
     loader = RAGDataLoader()
-    documents = await loader.load_all_documents(download_from_drive=False)
+    documents, split_docs, vectorstore = await loader.save_to_vector_database(
+        download_from_drive=False,
+        persist_directory="./chroma_db"
+    )
+    
+    # Query the vector store:
+    results = vectorstore.similarity_search("What is the code review policy?", k=5)
 """
 
 import json
@@ -29,6 +36,16 @@ from pathlib import Path
 # LangChain imports
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# Vector database and embeddings imports
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+    from langchain_chroma import Chroma
+    import torch
+    HAS_VECTOR_DB = True
+except ImportError:
+    HAS_VECTOR_DB = False
+    print("⚠️ Vector database libraries not installed. Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers")
 
 # Google Drive imports (optional, only for Colab)
 try:
@@ -50,7 +67,9 @@ class RAGDataLoader:
         json_dir: str = "json_files",
         kb_dir: str = "../kb",
         chunk_size: int = 500,
-        chunk_overlap: int = 50
+        chunk_overlap: int = 50,
+        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        collection_name: str = "hr_nexus_rag"
     ):
         """
         Initialize the RAG Data Loader
@@ -60,16 +79,24 @@ class RAGDataLoader:
             kb_dir: Directory containing markdown knowledge base files
             chunk_size: Size of text chunks for splitting
             chunk_overlap: Overlap between chunks
+            embedding_model: HuggingFace model name for embeddings
+            collection_name: Name for the ChromaDB collection
         """
         self.json_dir = json_dir
         self.kb_dir = kb_dir
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.embedding_model = embedding_model
+        self.collection_name = collection_name
         
         # Get absolute paths
         self.base_dir = Path(__file__).parent.parent
         self.json_path = self.base_dir / json_dir
         self.kb_path = self.base_dir / kb_dir
+        
+        # Initialize embedding and vector store (will be set when create_vector_store is called)
+        self.embeddings = None
+        self.vectorstore = None
         
     async def download_from_google_drive(
         self,
@@ -348,12 +375,151 @@ class RAGDataLoader:
             stats["categories"][category] = stats["categories"].get(category, 0) + 1
         
         return stats
+    
+    def initialize_embeddings(self):
+        """
+        Initialize the HuggingFace embeddings model
+        
+        Returns:
+            HuggingFaceEmbeddings instance
+        """
+        if not HAS_VECTOR_DB:
+            raise ImportError(
+                "Vector database libraries not installed. "
+                "Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers"
+            )
+        
+        print(f"🔧 Initializing embeddings model: {self.embedding_model}")
+        
+        try:
+            import torch
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            print(f"   Running on: {device.upper()}")
+        except:
+            device = 'cpu'
+        
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=self.embedding_model,
+            model_kwargs={'device': device},
+            encode_kwargs={'normalize_embeddings': True}
+        )
+        
+        print("✅ Embeddings model initialized")
+        return self.embeddings
+    
+    def create_vector_store(self, documents: List[Document], persist_directory: Optional[str] = None):
+        """
+        Create a vector store from documents with embeddings
+        
+        Args:
+            documents: List of Document objects (should be split chunks)
+            persist_directory: Optional directory to persist the vector store
+            
+        Returns:
+            Chroma vector store instance
+        """
+        if not HAS_VECTOR_DB:
+            raise ImportError(
+                "Vector database libraries not installed. "
+                "Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers"
+            )
+        
+        if not documents:
+            print("⚠️ No documents to create vector store")
+            return None
+        
+        # Initialize embeddings if not already done
+        if self.embeddings is None:
+            self.initialize_embeddings()
+        
+        print(f"\n{'='*80}")
+        print(f"🗄️ CREATING VECTOR STORE")
+        print(f"{'='*80}\n")
+        print(f"📊 Processing {len(documents)} document chunks...")
+        
+        # Count document types
+        json_count = sum(1 for d in documents if d.metadata.get('type') == 'json')
+        md_count = sum(1 for d in documents if d.metadata.get('type') == 'markdown')
+        
+        print(f"   - JSON chunks: {json_count}")
+        print(f"   - Markdown chunks: {md_count}")
+        
+        # Create vector store
+        if persist_directory:
+            self.vectorstore = Chroma.from_documents(
+                documents=documents,
+                embedding=self.embeddings,
+                collection_name=self.collection_name,
+                persist_directory=persist_directory
+            )
+            print(f"\n✅ Vector store created and persisted to: {persist_directory}")
+        else:
+            self.vectorstore = Chroma.from_documents(
+                documents=documents,
+                embedding=self.embeddings,
+                collection_name=self.collection_name
+            )
+            print(f"\n✅ Vector store created (in-memory)")
+        
+        print(f"   Collection name: {self.collection_name}")
+        print(f"   Total chunks: {len(documents)}")
+        print(f"{'='*80}\n")
+        
+        return self.vectorstore
+    
+    async def save_to_vector_database(
+        self,
+        google_drive_url: Optional[str] = None,
+        download_from_drive: bool = False,
+        persist_directory: Optional[str] = None
+    ):
+        """
+        Complete pipeline: Load documents, create embeddings, and save to vector database
+        
+        Args:
+            google_drive_url: Google Drive folder URL (optional)
+            download_from_drive: Whether to download from Google Drive first
+            persist_directory: Optional directory to persist the vector store
+            
+        Returns:
+            Tuple of (documents, split_docs, vectorstore)
+        """
+        print("\n" + "="*80)
+        print("🚀 RAG DATA LOADER - COMPLETE PIPELINE")
+        print("="*80 + "\n")
+        
+        # Step 1: Load all documents
+        documents = await self.load_all_documents(
+            google_drive_url=google_drive_url,
+            download_from_drive=download_from_drive
+        )
+        
+        if not documents:
+            print("⚠️ No documents loaded. Aborting.")
+            return ([], [], None)
+        
+        # Step 2: Split documents
+        split_docs = self.split_documents(documents)
+        
+        # Step 3: Create vector store with embeddings
+        vectorstore = self.create_vector_store(split_docs, persist_directory=persist_directory)
+        
+        # Final summary
+        print("="*80)
+        print("✅ PIPELINE COMPLETE!")
+        print("="*80)
+        print(f"📚 Documents loaded: {len(documents)}")
+        print(f"✂️ Chunks created: {len(split_docs)}")
+        print(f"🗄️ Vector store: {'Ready' if vectorstore else 'Failed'}")
+        print("="*80 + "\n")
+        
+        return (documents, split_docs, vectorstore)
 
 
 # Example usage for Colab Notebook
 async def main_colab():
     """
-    Example usage in Google Colab notebook
+    Example usage in Google Colab notebook with vector database
     """
     # Configuration
     GOOGLE_DRIVE_URL = "https://drive.google.com/drive/folders/1QzHjx32cNZgruG7rznmtf9DnVF4IzauO?usp=share_link"
@@ -363,51 +529,68 @@ async def main_colab():
         json_dir="json_files",
         kb_dir="../kb",
         chunk_size=500,
-        chunk_overlap=50
+        chunk_overlap=50,
+        embedding_model="sentence-transformers/all-MiniLM-L6-v2",
+        collection_name="hr_nexus_rag"
     )
     
-    # Load all documents
-    documents = await loader.load_all_documents(
+    # Run complete pipeline: load documents, create embeddings, save to vector DB
+    documents, split_docs, vectorstore = await loader.save_to_vector_database(
         google_drive_url=GOOGLE_DRIVE_URL,
-        download_from_drive=True
+        download_from_drive=True,
+        persist_directory=None  # In-memory for Colab
     )
-    
-    # Split into chunks
-    split_docs = loader.split_documents(documents)
     
     # Get statistics
     stats = loader.get_statistics(split_docs)
     print("\n📊 Statistics:")
     print(json.dumps(stats, indent=2))
     
-    return split_docs
+    # Test vector store with a query
+    if vectorstore:
+        print("\n🔍 Testing vector store with sample query...")
+        results = vectorstore.similarity_search("What projects are in progress?", k=3)
+        print(f"✅ Retrieved {len(results)} relevant documents")
+    
+    return vectorstore
 
 
 # Example usage for Local Backend
 async def main_backend():
     """
-    Example usage in local backend environment
+    Example usage in local backend environment with persistent vector database
     """
     # Initialize loader with backend paths
     loader = RAGDataLoader(
         json_dir="sources",  # Use local sources directory
         kb_dir="../kb",
         chunk_size=500,
-        chunk_overlap=50
+        chunk_overlap=50,
+        embedding_model="sentence-transformers/all-MiniLM-L6-v2",
+        collection_name="hr_nexus_rag"
     )
     
-    # Load all documents (skip Google Drive download)
-    documents = await loader.load_all_documents(download_from_drive=False)
-    
-    # Split into chunks
-    split_docs = loader.split_documents(documents)
+    # Run complete pipeline with persistent storage
+    documents, split_docs, vectorstore = await loader.save_to_vector_database(
+        download_from_drive=False,
+        persist_directory="./chroma_db"  # Persist to local directory
+    )
     
     # Get statistics
     stats = loader.get_statistics(split_docs)
     print("\n📊 Statistics:")
     print(json.dumps(stats, indent=2))
     
-    return split_docs
+    # Test vector store with a query
+    if vectorstore:
+        print("\n🔍 Testing vector store with sample query...")
+        results = vectorstore.similarity_search("What is the team structure?", k=3)
+        print(f"✅ Retrieved {len(results)} relevant documents")
+        for i, doc in enumerate(results, 1):
+            print(f"\n  [{i}] {doc.metadata.get('filename')} ({doc.metadata.get('type')})")
+            print(f"      {doc.page_content[:100]}...")
+    
+    return vectorstore
 
 
 if __name__ == "__main__":
