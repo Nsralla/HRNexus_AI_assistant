@@ -13,54 +13,73 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
-    
-    # Check if company_id provided, otherwise create new company
-    if user_data.company_id:
-        company = db.query(Company).filter(Company.id == user_data.company_id).first()
-        if not company:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company not found"
-            )
-        company_id = company.id
-    else:
-        # Create new company (use first part of email as company name)
-        company_name = user_data.email.split('@')[1].split('.')[0].capitalize()
-        new_company = Company(name=f"{company_name} Company")
-        db.add(new_company)
-        db.flush()
-        company_id = new_company.id
-    
-    # Check if user already exists
+    """Register a new user with comprehensive validation"""
+
+    # Validate password strength (minimum 8 characters)
+    if len(user_data.password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long"
+        )
+
+    # Validate full_name is not empty
+    if not user_data.full_name or not user_data.full_name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Full name is required"
+        )
+
+    # Validate that company_id is provided and exists
+    if not user_data.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Company ID is required. Please use the default company ID or contact your administrator."
+        )
+
+    company = db.query(Company).filter(Company.id == user_data.company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found. Please check your company ID or use the default one."
+        )
+    company_id = company.id
+
+    # Check if user already exists for this company
     existing_user = db.query(User).filter(
         User.company_id == company_id,
         User.email == user_data.email
     ).first()
-    
+
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered for this company"
         )
-    
-    # Create new user
+
+    # Create new user with hashed password
     hashed_pw = hash_password(user_data.password)
     new_user = User(
         company_id=company_id,
-        name=user_data.name,
-        email=user_data.email,
+        name=user_data.full_name.strip(),
+        email=user_data.email.lower(),
         hashed_password=hashed_pw,
-        role="admin" if not user_data.company_id else "employee"  # First user is admin
+        role="employee"  # All new signups start as employee
     )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user. Please try again."
+        )
+
     # Create access token
     access_token = create_access_token(data={"sub": str(new_user.id)})
-    
+
     return Token(
         access_token=access_token,
         user=UserResponse.from_orm(new_user)

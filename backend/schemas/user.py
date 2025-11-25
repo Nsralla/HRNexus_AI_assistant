@@ -5,10 +5,10 @@ import uuid
 
 # User Registration
 class UserCreate(BaseModel):
-    name: str
+    full_name: str
     email: EmailStr
     password: str
-    company_id: Optional[uuid.UUID] = None  # Optional: auto-create company if None
+    company_id: uuid.UUID  # Required: must provide a valid company ID
 
 # User Login
 class UserLogin(BaseModel):
