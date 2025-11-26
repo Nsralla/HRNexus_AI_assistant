@@ -1,0 +1,109 @@
+[
+  {
+    "id": "sprint-24",
+    "name": "Sprint 24",
+    "start_date": "2025-06-23T00:00:00Z",
+    "end_date": "2025-07-06T23:59:59Z",
+    "status": "active",
+    "goal": "Complete critical security fixes, improve deployment automation, and enhance monitoring capabilities",
+    "total_story_points": 98,
+    "completed_story_points": 52,
+    "team_velocity": 85,
+    "tickets": [
+      "HARRI-123", "HARRI-124", "HARRI-125", "HARRI-126", "HARRI-127",
+      "HARRI-128", "HARRI-129", "HARRI-130", "HARRI-133", "HARRI-134",
+      "HARRI-135", "HARRI-142", "HARRI-143"
+    ],
+    "burndown": [
+      {"date": "2025-06-23", "remaining_points": 98},
+      {"date": "2025-06-24", "remaining_points": 95},
+      {"date": "2025-06-25", "remaining_points": 87},
+      {"date": "2025-06-26", "remaining_points": 82},
+      {"date": "2025-06-27", "remaining_points": 74},
+      {"date": "2025-06-28", "remaining_points": 68},
+      {"date": "2025-06-29", "remaining_points": 68},
+      {"date": "2025-06-30", "remaining_points": 65},
+      {"date": "2025-07-01", "remaining_points": 58},
+      {"date": "2025-07-02", "remaining_points": 52},
+      {"date": "2025-07-03", "remaining_points": 48},
+      {"date": "2025-07-04", "remaining_points": 46},
+      {"date": "2025-07-05", "remaining_points": 46}
+    ],
+    "retrospective_notes": null
+  },
+  {
+    "id": "sprint-25",
+    "name": "Sprint 25",
+    "start_date": "2025-07-07T00:00:00Z",
+    "end_date": "2025-07-20T23:59:59Z",
+    "status": "planned",
+    "goal": "Focus on performance optimization, internationalization, and infrastructure upgrades",
+    "total_story_points": 89,
+    "completed_story_points": 0,
+    "team_velocity": 85,
+    "tickets": [
+      "HARRI-131", "HARRI-132", "HARRI-136", "HARRI-137", "HARRI-138",
+      "HARRI-139", "HARRI-140", "HARRI-141", "HARRI-144", "HARRI-145"
+    ],
+    "burndown": [],
+    "retrospective_notes": null
+  },
+  {
+    "id": "sprint-23",
+    "name": "Sprint 23",
+    "start_date": "2025-06-09T00:00:00Z",
+    "end_date": "2025-06-22T23:59:59Z",
+    "status": "completed",
+    "goal": "Complete payment gateway integration and frontend redesign",
+    "total_story_points": 92,
+    "completed_story_points": 88,
+    "team_velocity": 88,
+    "tickets": [],
+    "burndown": [
+      {"date": "2025-06-09", "remaining_points": 92},
+      {"date": "2025-06-10", "remaining_points": 87},
+      {"date": "2025-06-11", "remaining_points": 82},
+      {"date": "2025-06-12", "remaining_points": 75},
+      {"date": "2025-06-13", "remaining_points": 68},
+      {"date": "2025-06-14", "remaining_points": 60},
+      {"date": "2025-06-15", "remaining_points": 60},
+      {"date": "2025-06-16", "remaining_points": 55},
+      {"date": "2025-06-17", "remaining_points": 45},
+      {"date": "2025-06-18", "remaining_points": 35},
+      {"date": "2025-06-19", "remaining_points": 25},
+      {"date": "2025-06-20", "remaining_points": 15},
+      {"date": "2025-06-21", "remaining_points": 8},
+      {"date": "2025-06-22", "remaining_points": 4}
+    ],
+    "retrospective_notes": "Great sprint overall. Payment integration went smoothly. Need to improve estimation accuracy for DevOps tasks."
+  },
+  {
+    "id": "sprint-22",
+    "name": "Sprint 22",
+    "start_date": "2025-05-26T00:00:00Z",
+    "end_date": "2025-06-08T23:59:59Z",
+    "status": "completed",
+    "goal": "Stabilize authentication service and improve QA automation",
+    "total_story_points": 85,
+    "completed_story_points": 82,
+    "team_velocity": 82,
+    "tickets": [],
+    "burndown": [
+      {"date": "2025-05-26", "remaining_points": 85},
+      {"date": "2025-05-27", "remaining_points": 80},
+      {"date": "2025-05-28", "remaining_points": 73},
+      {"date": "2025-05-29", "remaining_points": 65},
+      {"date": "2025-05-30", "remaining_points": 58},
+      {"date": "2025-05-31", "remaining_points": 50},
+      {"date": "2025-06-01", "remaining_points": 50},
+      {"date": "2025-06-02", "remaining_points": 42},
+      {"date": "2025-06-03", "remaining_points": 35},
+      {"date": "2025-06-04", "remaining_points": 28},
+      {"date": "2025-06-05", "remaining_points": 20},
+      {"date": "2025-06-06", "remaining_points": 12},
+      {"date": "2025-06-07", "remaining_points": 6},
+      {"date": "2025-06-08", "remaining_points": 3}
+    ],
+    "retrospective_notes": "Authentication service stabilization successful. E2E test coverage improved significantly."
+  }
+]

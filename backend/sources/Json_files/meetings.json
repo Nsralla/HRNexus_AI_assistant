@@ -1,0 +1,212 @@
+[
+  {
+    "id": "meet-001",
+    "title": "Sprint 24 Planning",
+    "type": "sprint-planning",
+    "date": "2025-06-23T09:00:00Z",
+    "duration_minutes": 120,
+    "attendees": [
+      "noor_j", "ahmed_ali", "fatima_k", "sarah_odeh", "khaled_m",
+      "adam_s", "lina_s", "youssef_h", "leen_q", "omar_s",
+      "maya_t", "rami_b", "layla_r", "tariq_y"
+    ],
+    "agenda": [
+      "Review Sprint 23 completion",
+      "Discuss Sprint 24 goals",
+      "Story estimation and assignment",
+      "Identify dependencies and risks"
+    ],
+    "notes": "Team committed to 98 story points. Focus on security and deployment automation. Payment service incident from last sprint needs follow-up.",
+    "action_items": [
+      {
+        "item": "Create post-mortem document for payment service outage",
+        "assigned_to": "adam_s",
+        "due_date": "2025-06-25T23:59:59Z"
+      },
+      {
+        "item": "Setup database backup automation",
+        "assigned_to": "lina_s",
+        "due_date": "2025-07-09T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-002",
+    "title": "Sprint 23 Retrospective",
+    "type": "retrospective",
+    "date": "2025-06-22T14:00:00Z",
+    "duration_minutes": 90,
+    "attendees": [
+      "noor_j", "ahmed_ali", "fatima_k", "sarah_odeh", "khaled_m",
+      "adam_s", "lina_s", "youssef_h", "leen_q", "omar_s",
+      "maya_t", "rami_b", "layla_r", "tariq_y"
+    ],
+    "agenda": [
+      "What went well",
+      "What could be improved",
+      "Action items for next sprint"
+    ],
+    "notes": "Payment integration completed successfully. Frontend redesign received positive feedback. DevOps tasks took longer than estimated. Need better estimation for infrastructure work.",
+    "action_items": [
+      {
+        "item": "Improve DevOps task estimation process",
+        "assigned_to": "adam_s",
+        "due_date": "2025-06-30T23:59:59Z"
+      },
+      {
+        "item": "Schedule knowledge sharing session on payment gateway integration",
+        "assigned_to": "ahmed_ali",
+        "due_date": "2025-07-05T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-003",
+    "title": "Architecture Review - Cloud Migration",
+    "type": "technical",
+    "date": "2025-07-01T10:00:00Z",
+    "duration_minutes": 120,
+    "attendees": [
+      "hossam_d", "noor_j", "ahmed_ali", "adam_s", "leen_q"
+    ],
+    "agenda": [
+      "Review Kubernetes migration strategy",
+      "Discuss service mesh implementation",
+      "Database migration approach",
+      "Security considerations"
+    ],
+    "notes": "Approved phased migration approach. Start with non-critical services. Implement comprehensive monitoring before migrating production workloads.",
+    "action_items": [
+      {
+        "item": "Create detailed migration runbook",
+        "assigned_to": "adam_s",
+        "due_date": "2025-07-15T23:59:59Z"
+      },
+      {
+        "item": "Setup staging Kubernetes cluster",
+        "assigned_to": "lina_s",
+        "due_date": "2025-07-10T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-004",
+    "title": "Weekly Standup - Backend Team",
+    "type": "standup",
+    "date": "2025-07-05T10:00:00Z",
+    "duration_minutes": 30,
+    "attendees": [
+      "ahmed_ali", "fatima_k", "sarah_odeh", "khaled_m"
+    ],
+    "agenda": [
+      "Yesterday's progress",
+      "Today's plan",
+      "Blockers"
+    ],
+    "notes": "Ahmed working on rate limiting implementation. Fatima on API documentation. Sarah investigating notification service memory leak. Khaled optimizing database queries.",
+    "action_items": [
+      {
+        "item": "Review rate limiting PR",
+        "assigned_to": "fatima_k",
+        "due_date": "2025-07-06T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-005",
+    "title": "Security Review Meeting",
+    "type": "security",
+    "date": "2025-07-02T15:00:00Z",
+    "duration_minutes": 90,
+    "attendees": [
+      "hossam_d", "ahmed_ali", "fatima_k", "adam_s"
+    ],
+    "agenda": [
+      "Review recent security audit findings",
+      "Discuss rate limiting implementation",
+      "File upload virus scanning requirements",
+      "Security roadmap for Q3"
+    ],
+    "notes": "Prioritize rate limiting and virus scanning. Schedule penetration testing for August. Need to update security documentation.",
+    "action_items": [
+      {
+        "item": "Implement rate limiting on auth endpoints",
+        "assigned_to": "ahmed_ali",
+        "due_date": "2025-07-12T23:59:59Z"
+      },
+      {
+        "item": "Setup file scanning with ClamAV",
+        "assigned_to": "fatima_k",
+        "due_date": "2025-07-20T23:59:59Z"
+      },
+      {
+        "item": "Schedule penetration testing",
+        "assigned_to": "hossam_d",
+        "due_date": "2025-07-15T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-006",
+    "title": "Frontend Team Sync",
+    "type": "team-sync",
+    "date": "2025-07-04T11:00:00Z",
+    "duration_minutes": 45,
+    "attendees": [
+      "leen_q", "omar_s", "maya_t", "rami_b"
+    ],
+    "agenda": [
+      "Dark mode implementation progress",
+      "Component library documentation",
+      "Dependency upgrade status",
+      "Next sprint planning"
+    ],
+    "notes": "Dark mode on track for completion. Storybook documentation making good progress. Dependency upgrades completed successfully.",
+    "action_items": [
+      {
+        "item": "Complete dark mode testing",
+        "assigned_to": "leen_q",
+        "due_date": "2025-07-08T23:59:59Z"
+      },
+      {
+        "item": "Finish Storybook component examples",
+        "assigned_to": "rami_b",
+        "due_date": "2025-07-12T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "id": "meet-007",
+    "title": "Incident Post-Mortem - Payment Outage",
+    "type": "post-mortem",
+    "date": "2025-07-01T14:00:00Z",
+    "duration_minutes": 60,
+    "attendees": [
+      "noor_j", "ahmed_ali", "adam_s", "hossam_d"
+    ],
+    "agenda": [
+      "Timeline review",
+      "Root cause analysis",
+      "Prevention measures",
+      "Action items"
+    ],
+    "notes": "Database migration testing was insufficient. Need better rollback automation. Monitoring alerts worked well. Communication during incident was effective.",
+    "action_items": [
+      {
+        "item": "Implement automated database backup testing",
+        "assigned_to": "lina_s",
+        "due_date": "2025-07-09T23:59:59Z"
+      },
+      {
+        "item": "Update deployment checklist to include migration validation",
+        "assigned_to": "adam_s",
+        "due_date": "2025-07-06T23:59:59Z"
+      },
+      {
+        "item": "Create migration testing guidelines",
+        "assigned_to": "ahmed_ali",
+        "due_date": "2025-07-10T23:59:59Z"
+      }
+    ]
+  }
+]

@@ -1,0 +1,217 @@
+[
+  {
+    "id": "inc-001",
+    "title": "Payment Service Outage",
+    "severity": "critical",
+    "status": "resolved",
+    "service": "payments-service",
+    "reported_by": "monitoring",
+    "assigned_to": "adam_s",
+    "created_date": "2025-06-30T09:55:00Z",
+    "resolved_date": "2025-06-30T11:45:00Z",
+    "duration_minutes": 110,
+    "affected_users": 4500,
+    "root_cause": "Database migration script caused connection pool exhaustion during deployment",
+    "resolution": "Rolled back deployment, fixed migration script, redeployed successfully",
+    "linked_tickets": ["HARRI-128"],
+    "timeline": [
+      {
+        "time": "2025-06-30T09:55:00Z",
+        "event": "Alert triggered - Payment service health check failing",
+        "actor": "monitoring"
+      },
+      {
+        "time": "2025-06-30T10:02:00Z",
+        "event": "Incident acknowledged by on-call engineer",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-30T10:15:00Z",
+        "event": "Root cause identified - database migration issue",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-30T10:25:00Z",
+        "event": "Rollback initiated",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-30T10:45:00Z",
+        "event": "Service restored to previous version",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-30T11:45:00Z",
+        "event": "Incident resolved and documented",
+        "actor": "adam_s"
+      }
+    ],
+    "post_mortem_url": "https://docs.harri.com/incidents/inc-001"
+  },
+  {
+    "id": "inc-002",
+    "title": "Frontend Dashboard High Latency",
+    "severity": "major",
+    "status": "resolved",
+    "service": "frontend-app",
+    "reported_by": "omar_s",
+    "assigned_to": "leen_q",
+    "created_date": "2025-07-05T08:30:00Z",
+    "resolved_date": "2025-07-05T10:15:00Z",
+    "duration_minutes": 105,
+    "affected_users": 1200,
+    "root_cause": "N+1 query problem in user dashboard causing database overload",
+    "resolution": "Applied query optimization patch, added caching layer",
+    "linked_tickets": ["HARRI-132"],
+    "timeline": [
+      {
+        "time": "2025-07-05T08:30:00Z",
+        "event": "User reports slow dashboard loading",
+        "actor": "omar_s"
+      },
+      {
+        "time": "2025-07-05T08:45:00Z",
+        "event": "Performance investigation started",
+        "actor": "leen_q"
+      },
+      {
+        "time": "2025-07-05T09:20:00Z",
+        "event": "N+1 query problem identified",
+        "actor": "khaled_m"
+      },
+      {
+        "time": "2025-07-05T09:45:00Z",
+        "event": "Hotfix deployed to production",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-07-05T10:15:00Z",
+        "event": "Performance restored, incident closed",
+        "actor": "leen_q"
+      }
+    ],
+    "post_mortem_url": "https://docs.harri.com/incidents/inc-002"
+  },
+  {
+    "id": "inc-003",
+    "title": "Docker Networking Issue in Staging",
+    "severity": "major",
+    "status": "investigating",
+    "service": "infrastructure",
+    "reported_by": "sarah_odeh",
+    "assigned_to": "lina_s",
+    "created_date": "2025-07-02T14:30:00Z",
+    "resolved_date": null,
+    "duration_minutes": null,
+    "affected_users": 0,
+    "root_cause": "Under investigation - DNS resolution failing intermittently",
+    "resolution": "In progress",
+    "linked_tickets": ["HARRI-126"],
+    "timeline": [
+      {
+        "time": "2025-07-02T14:30:00Z",
+        "event": "Staging containers unable to reach database",
+        "actor": "sarah_odeh"
+      },
+      {
+        "time": "2025-07-02T15:00:00Z",
+        "event": "Incident assigned to DevOps team",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-07-04T10:00:00Z",
+        "event": "DNS configuration review in progress",
+        "actor": "lina_s"
+      }
+    ],
+    "post_mortem_url": null
+  },
+  {
+    "id": "inc-004",
+    "title": "Authentication Service Memory Spike",
+    "severity": "minor",
+    "status": "resolved",
+    "service": "auth-service",
+    "reported_by": "monitoring",
+    "assigned_to": "ahmed_ali",
+    "created_date": "2025-07-03T16:00:00Z",
+    "resolved_date": "2025-07-03T17:30:00Z",
+    "duration_minutes": 90,
+    "affected_users": 0,
+    "root_cause": "Redis connection leak in session cleanup job",
+    "resolution": "Fixed connection handling, deployed patch",
+    "linked_tickets": ["HARRI-130"],
+    "timeline": [
+      {
+        "time": "2025-07-03T16:00:00Z",
+        "event": "Memory usage alert triggered",
+        "actor": "monitoring"
+      },
+      {
+        "time": "2025-07-03T16:15:00Z",
+        "event": "Investigation started",
+        "actor": "ahmed_ali"
+      },
+      {
+        "time": "2025-07-03T16:45:00Z",
+        "event": "Connection leak identified",
+        "actor": "ahmed_ali"
+      },
+      {
+        "time": "2025-07-03T17:15:00Z",
+        "event": "Fix deployed to production",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-07-03T17:30:00Z",
+        "event": "Memory usage back to normal",
+        "actor": "monitoring"
+      }
+    ],
+    "post_mortem_url": "https://docs.harri.com/incidents/inc-004"
+  },
+  {
+    "id": "inc-005",
+    "title": "Backend Service Deployment Failure",
+    "severity": "major",
+    "status": "resolved",
+    "service": "backend-api",
+    "reported_by": "adam_s",
+    "assigned_to": "adam_s",
+    "created_date": "2025-06-28T12:45:00Z",
+    "resolved_date": "2025-06-28T13:30:00Z",
+    "duration_minutes": 45,
+    "affected_users": 0,
+    "root_cause": "Container health check timeout due to slow startup",
+    "resolution": "Increased health check timeout, optimized startup sequence",
+    "linked_tickets": [],
+    "timeline": [
+      {
+        "time": "2025-06-28T12:45:00Z",
+        "event": "Deployment failed health checks",
+        "actor": "ci-cd"
+      },
+      {
+        "time": "2025-06-28T12:50:00Z",
+        "event": "Automatic rollback triggered",
+        "actor": "ci-cd"
+      },
+      {
+        "time": "2025-06-28T13:00:00Z",
+        "event": "Root cause analysis completed",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-28T13:20:00Z",
+        "event": "Configuration updated and redeployed",
+        "actor": "adam_s"
+      },
+      {
+        "time": "2025-06-28T13:30:00Z",
+        "event": "Deployment successful",
+        "actor": "ci-cd"
+      }
+    ],
+    "post_mortem_url": "https://docs.harri.com/incidents/inc-005"
+  }
+]
