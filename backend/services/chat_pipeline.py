@@ -9,7 +9,15 @@ from .jiraTicketsService import search_jira_tickets_tool
 from .deploymentsService import search_deployments_tool
 from .projectsService import search_projects_tool
 from .sprintsService import search_sprints_tool
-from rag_data_loader import RAGDataLoader
+
+# Try to import RAG, but don't fail if dependencies are missing
+try:
+    from rag_data_loader import RAGDataLoader
+    HAS_RAG = True
+except ImportError as e:
+    print(f"[WARNING] RAG dependencies not available: {e}")
+    RAGDataLoader = None
+    HAS_RAG = False
 
 load_dotenv()
 
@@ -47,6 +55,11 @@ class ChatPipeLine:
 
     def initialize_rag(self):
         """Initialize RAG vector store for documentation queries"""
+        if not HAS_RAG or RAGDataLoader is None:
+            print("[WARNING] RAG system not available - missing dependencies")
+            self.vectorstore = None
+            return
+
         try:
             rag_loader = RAGDataLoader(
                 kb_dir="sources/kb",
