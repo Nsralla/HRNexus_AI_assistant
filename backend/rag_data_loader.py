@@ -22,15 +22,13 @@ from pathlib import Path
 
 # Check if vector database libraries are available
 try:
-    from langchain_huggingface import HuggingFaceEmbeddings
+    from langchain_cohere import CohereEmbeddings
     from langchain_chroma import Chroma
-    import torch
     HAS_VECTOR_DB = True
 except ImportError:
     HAS_VECTOR_DB = False
-    HuggingFaceEmbeddings = None
+    CohereEmbeddings = None
     Chroma = None
-    torch = None
 
 # LangChain imports
 from langchain_core.documents import Document
@@ -240,25 +238,18 @@ class RAGDataLoader:
         if not HAS_VECTOR_DB:
             raise ImportError(
                 "Vector database libraries not installed. "
-                "Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers"
+                "Install with: pip install langchain-cohere langchain-chroma"
             )
 
-        logger.info(f"Initializing embeddings model: {self.embedding_model}")
+        logger.info(f"Initializing Cohere embeddings model: {self.embedding_model}")
 
-        try:
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            logger.info(f"  Device: {device.upper()}")
-        except Exception:
-            device = 'cpu'
-            logger.info(f"  Device: CPU")
-
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.embedding_model,
-            model_kwargs={'device': device},
-            encode_kwargs={'normalize_embeddings': True}
+        # Use Cohere embeddings API (free tier available, no local RAM needed)
+        self.embeddings = CohereEmbeddings(
+            model=self.embedding_model,
+            # API key will be loaded from environment variable COHERE_API_KEY
         )
 
-        logger.info("Embeddings model initialized successfully")
+        logger.info("Cohere embeddings initialized successfully")
         return self.embeddings
 
     def create_vector_store(

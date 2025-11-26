@@ -16,9 +16,6 @@ langgraph
 openai
 python-dotenv
 email-validator
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.5.1+cpu
-sentence-transformers
 langchain-chroma
-langchain-huggingface
+langchain-cohere
 langchain-text-splitters

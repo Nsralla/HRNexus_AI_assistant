@@ -99,7 +99,7 @@ class ChatPipeLine:
                 kb_dir="sources/kb",
                 chunk_size=1000,
                 chunk_overlap=350,
-                embedding_model="sentence-transformers/all-MiniLM-L6-v2",
+                embedding_model="embed-english-v3.0",  # Cohere free embedding model
                 collection_name="hr_nexus_rag"
             )
             self.vectorstore = rag_loader.load_existing_vectorstore("./chroma_db")
