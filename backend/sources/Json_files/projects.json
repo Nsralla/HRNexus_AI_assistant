@@ -1,0 +1,173 @@
+[
+  {
+    "id": "proj-001",
+    "name": "Payment Gateway Integration",
+    "key": "PAY",
+    "description": "Integration with multiple payment providers including Stripe, PayPal, and local payment methods",
+    "status": "active",
+    "lead": "ahmed_ali",
+    "team": ["ahmed_ali", "fatima_k", "khaled_m"],
+    "start_date": "2025-05-01T00:00:00Z",
+    "target_completion": "2025-08-31T23:59:59Z",
+    "progress_percentage": 65,
+    "budget_hours": 800,
+    "consumed_hours": 520,
+    "epics": ["Payment System Reliability", "Security Enhancements"],
+    "repositories": [
+      "harri/payments-service",
+      "harri/payment-gateway-sdk"
+    ],
+    "tech_stack": ["Python", "Django", "PostgreSQL", "Redis", "Docker"],
+    "priority": "High"
+  },
+  {
+    "id": "proj-002",
+    "name": "Frontend Modernization",
+    "key": "FEM",
+    "description": "Complete redesign of frontend architecture with React 18, TypeScript, and modern UI/UX patterns",
+    "status": "active",
+    "lead": "leen_q",
+    "team": ["leen_q", "omar_s", "maya_t", "rami_b"],
+    "start_date": "2025-04-15T00:00:00Z",
+    "target_completion": "2025-09-30T23:59:59Z",
+    "progress_percentage": 55,
+    "budget_hours": 1200,
+    "consumed_hours": 660,
+    "epics": ["UI/UX Improvements", "Internationalization", "Design System"],
+    "repositories": [
+      "harri/frontend-app",
+      "harri/design-system",
+      "harri/component-library"
+    ],
+    "tech_stack": ["React", "TypeScript", "Redux", "Tailwind CSS", "Storybook"],
+    "priority": "High"
+  },
+  {
+    "id": "proj-003",
+    "name": "Cloud Infrastructure Upgrade",
+    "key": "CIU",
+    "description": "Migrate infrastructure to Kubernetes, implement GitOps, and enhance observability",
+    "status": "active",
+    "lead": "adam_s",
+    "team": ["adam_s", "lina_s", "youssef_h"],
+    "start_date": "2025-06-01T00:00:00Z",
+    "target_completion": "2025-10-31T23:59:59Z",
+    "progress_percentage": 40,
+    "budget_hours": 1000,
+    "consumed_hours": 400,
+    "epics": ["Infrastructure Modernization", "Observability", "DevOps Excellence"],
+    "repositories": [
+      "harri/infrastructure",
+      "harri/k8s-configs",
+      "harri/terraform-modules"
+    ],
+    "tech_stack": ["Kubernetes", "Terraform", "AWS", "Prometheus", "Grafana", "ELK"],
+    "priority": "High"
+  },
+  {
+    "id": "proj-004",
+    "name": "User Management System",
+    "key": "UMS",
+    "description": "Comprehensive user management with profile editing, permissions, and bulk operations",
+    "status": "active",
+    "lead": "ahmed_ali",
+    "team": ["ahmed_ali", "sarah_odeh", "maya_t"],
+    "start_date": "2025-06-15T00:00:00Z",
+    "target_completion": "2025-08-15T23:59:59Z",
+    "progress_percentage": 30,
+    "budget_hours": 600,
+    "consumed_hours": 180,
+    "epics": ["User Management"],
+    "repositories": [
+      "harri/user-service",
+      "harri/frontend-app"
+    ],
+    "tech_stack": ["Java", "Spring Boot", "React", "PostgreSQL"],
+    "priority": "Medium"
+  },
+  {
+    "id": "proj-005",
+    "name": "Quality Assurance Automation",
+    "key": "QAA",
+    "description": "Implement comprehensive E2E testing, performance testing, and continuous quality monitoring",
+    "status": "active",
+    "lead": "layla_r",
+    "team": ["layla_r", "tariq_y"],
+    "start_date": "2025-05-20T00:00:00Z",
+    "target_completion": "2025-09-15T23:59:59Z",
+    "progress_percentage": 50,
+    "budget_hours": 700,
+    "consumed_hours": 350,
+    "epics": ["Quality Assurance", "Performance Testing"],
+    "repositories": [
+      "harri/e2e-tests",
+      "harri/performance-tests"
+    ],
+    "tech_stack": ["Cypress", "Jest", "JMeter", "Selenium"],
+    "priority": "High"
+  },
+  {
+    "id": "proj-006",
+    "name": "Onboarding Service Enhancement",
+    "key": "OSE",
+    "description": "Improve user onboarding flow with better UX, analytics, and integration with authentication",
+    "status": "active",
+    "lead": "fatima_k",
+    "team": ["fatima_k", "sarah_odeh", "omar_s"],
+    "start_date": "2025-06-10T00:00:00Z",
+    "target_completion": "2025-07-31T23:59:59Z",
+    "progress_percentage": 70,
+    "budget_hours": 400,
+    "consumed_hours": 280,
+    "epics": ["Onboarding Improvements"],
+    "repositories": [
+      "harri/onboarding-service",
+      "harri/frontend-app"
+    ],
+    "tech_stack": ["Node.js", "MongoDB", "React", "Redis"],
+    "priority": "Medium"
+  },
+  {
+    "id": "proj-007",
+    "name": "Security Hardening Initiative",
+    "key": "SEC",
+    "description": "Comprehensive security improvements including rate limiting, virus scanning, and vulnerability patching",
+    "status": "active",
+    "lead": "hossam_d",
+    "team": ["ahmed_ali", "fatima_k", "adam_s", "lina_s"],
+    "start_date": "2025-07-01T00:00:00Z",
+    "target_completion": "2025-09-30T23:59:59Z",
+    "progress_percentage": 25,
+    "budget_hours": 800,
+    "consumed_hours": 200,
+    "epics": ["Security Enhancements"],
+    "repositories": [
+      "harri/auth-service",
+      "harri/file-service",
+      "harri/api-gateway"
+    ],
+    "tech_stack": ["Python", "Node.js", "ClamAV", "Redis", "AWS WAF"],
+    "priority": "Critical"
+  },
+  {
+    "id": "proj-008",
+    "name": "API Documentation Platform",
+    "key": "API",
+    "description": "Create comprehensive API documentation with interactive examples and SDK generation",
+    "status": "planning",
+    "lead": "fatima_k",
+    "team": ["fatima_k", "khaled_m"],
+    "start_date": "2025-08-01T00:00:00Z",
+    "target_completion": "2025-10-15T23:59:59Z",
+    "progress_percentage": 10,
+    "budget_hours": 500,
+    "consumed_hours": 50,
+    "epics": ["API Documentation", "Documentation"],
+    "repositories": [
+      "harri/api-docs",
+      "harri/sdk-generator"
+    ],
+    "tech_stack": ["OpenAPI", "Swagger", "Postman", "Markdown"],
+    "priority": "Medium"
+  }
+]

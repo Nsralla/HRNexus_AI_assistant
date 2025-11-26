@@ -16,3 +16,8 @@ langgraph
 openai
 python-dotenv
 email-validator
+torch
+sentence-transformers
+langchain-chroma
+langchain-huggingface
+langchain-text-splitters
