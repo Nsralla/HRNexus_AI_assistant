@@ -1,24 +1,30 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-import os
+from contextlib import asynccontextmanager
 
-from core.database import engine, Base, get_db
-from models import Company, User, Chat, Message, MessageFeedback, Document
+from core.database import engine, Base
 from routers import auth, chat
 
 # Load environment variables
 load_dotenv()
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Create database tables
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Shutdown: Add cleanup here if needed
+    pass
 
-# Create FastAPI app
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="HR Nexus API",
     description="AI-powered HR Assistant with RAG",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configure CORS - Must be added before routers

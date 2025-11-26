@@ -1,23 +1,12 @@
 import os
 from dotenv import load_dotenv
-from typing import TypedDict
-from langchain_core.messages import HumanMessage, AIMessage
-from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
-from .employeesService import search_emps_by_key_tool
-from .jiraTicketsService import search_jira_tickets_tool
-from .deploymentsService import search_deployments_tool
-from .projectsService import search_projects_tool
-from .sprintsService import search_sprints_tool
+from typing import TypedDict, TYPE_CHECKING
 
-# Try to import RAG, but don't fail if dependencies are missing
-try:
-    from rag_data_loader import RAGDataLoader
-    HAS_RAG = True
-except ImportError as e:
-    print(f"[WARNING] RAG dependencies not available: {e}")
-    RAGDataLoader = None
-    HAS_RAG = False
+# Lazy imports - only load heavy dependencies when needed
+if TYPE_CHECKING:
+    from langchain_core.messages import HumanMessage, AIMessage
+    from langgraph.graph import StateGraph
+    from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -25,12 +14,27 @@ load_dotenv()
 class StateAgent(TypedDict):
     user_query: str
     intent: str
-    chat_history: list[HumanMessage | AIMessage]
+    chat_history: list  # Use list instead of list[HumanMessage | AIMessage] for lazy loading
 
 
 class ChatPipeLine:
     def __init__(self):
         try:
+            # Import heavy dependencies only when initializing
+            from langchain_core.messages import HumanMessage, AIMessage
+            from langgraph.graph import StateGraph, END
+            from langchain_openai import ChatOpenAI
+            from .employeesService import search_emps_by_key_tool
+            from .jiraTicketsService import search_jira_tickets_tool
+            from .deploymentsService import search_deployments_tool
+            from .projectsService import search_projects_tool
+            from .sprintsService import search_sprints_tool
+
+            # Store for use in methods
+            self.HumanMessage = HumanMessage
+            self.AIMessage = AIMessage
+            self.END = END
+
             self.workflow = StateGraph(StateAgent)
             self.llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
@@ -52,6 +56,15 @@ class ChatPipeLine:
                 search_sprints_tool
             ])
 
+            # Store tool map for later use
+            self.tool_map = {
+                "search_emps_by_key_tool": search_emps_by_key_tool,
+                "search_jira_tickets_tool": search_jira_tickets_tool,
+                "search_deployments_tool": search_deployments_tool,
+                "search_projects_tool": search_projects_tool,
+                "search_sprints_tool": search_sprints_tool
+            }
+
             # Initialize RAG vector store
             self.vectorstore = None
             self.initialize_rag()
@@ -67,7 +80,16 @@ class ChatPipeLine:
 
     def initialize_rag(self):
         """Initialize RAG vector store for documentation queries"""
-        if not HAS_RAG or RAGDataLoader is None:
+        # Try to import RAG dependencies
+        try:
+            from rag_data_loader import RAGDataLoader
+            has_rag = True
+        except ImportError as e:
+            print(f"[WARNING] RAG dependencies not available: {e}")
+            has_rag = False
+            RAGDataLoader = None
+
+        if not has_rag or RAGDataLoader is None:
             print("[WARNING] RAG system not available - missing dependencies")
             self.vectorstore = None
             return
@@ -118,7 +140,7 @@ User Query: {user_query}
 
 Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
-        messages = [HumanMessage(content=prompt.format(user_query=state["user_query"]))]
+        messages = [self.HumanMessage(content=prompt.format(user_query=state["user_query"]))]
         # Use lighter, faster LLM for intent classification
         response = await self.intent_llm.ainvoke(messages)
         state["intent"] = response.content.strip().lower()
@@ -137,11 +159,11 @@ Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
     async def documentation_query(self, state: StateAgent) -> StateAgent:
         """Handle documentation queries using RAG"""
-        state["chat_history"].append(HumanMessage(content=state["user_query"]))
+        state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
 
         if not self.vectorstore:
             response_message = "Documentation system is currently unavailable. Please contact support."
-            state["chat_history"].append(AIMessage(content=response_message))
+            state["chat_history"].append(self.AIMessage(content=response_message))
             return state
 
         try:
@@ -152,7 +174,7 @@ Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
             if not relevant_docs:
                 response_message = "No relevant documentation found for your query."
-                state["chat_history"].append(AIMessage(content=response_message))
+                state["chat_history"].append(self.AIMessage(content=response_message))
                 return state
 
             # Build context from retrieved documents
@@ -173,19 +195,19 @@ User Question: {state["user_query"]}
 
 Provide a helpful, well-formatted answer based on the documentation above."""
 
-            response = await self.llm.ainvoke([HumanMessage(content=prompt)])
-            state["chat_history"].append(AIMessage(content=response.content))
+            response = await self.llm.ainvoke([self.HumanMessage(content=prompt)])
+            state["chat_history"].append(self.AIMessage(content=response.content))
 
         except Exception as e:
             error_message = f"Error retrieving documentation: {str(e)}"
             print(f"[ERROR] {error_message}")
-            state["chat_history"].append(AIMessage(content="An error occurred while searching documentation."))
+            state["chat_history"].append(self.AIMessage(content="An error occurred while searching documentation."))
 
         return state
 
     async def general_conversation(self, state: StateAgent) -> StateAgent:
         """Handle general conversation, greetings, and identity questions"""
-        state["chat_history"].append(HumanMessage(content=state["user_query"]))
+        state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
 
         system_prompt = """You are HRNexus, an AI assistant for your company's HR and engineering operations.
 
@@ -205,25 +227,25 @@ When greeting users or answering identity questions:
 Keep responses concise and helpful."""
 
         messages = [
-            HumanMessage(content=system_prompt),
-            HumanMessage(content=f"User: {state['user_query']}\n\nRespond naturally and helpfully.")
+            self.HumanMessage(content=system_prompt),
+            self.HumanMessage(content=f"User: {state['user_query']}\n\nRespond naturally and helpfully.")
         ]
 
         try:
             response = await self.llm.ainvoke(messages)
-            state["chat_history"].append(AIMessage(content=response.content))
+            state["chat_history"].append(self.AIMessage(content=response.content))
         except Exception as e:
             print(f"[ERROR] General conversation failed: {e}")
-            state["chat_history"].append(AIMessage(content="Hi! I'm HRNexus, your HR assistant. How can I help you today?"))
+            state["chat_history"].append(self.AIMessage(content="Hi! I'm HRNexus, your HR assistant. How can I help you today?"))
 
         return state
 
     async def data_query(self, state: StateAgent) -> StateAgent:
         """Handle structured data queries with ALL 5 tools"""
-        state["chat_history"].append(HumanMessage(content=state["user_query"]))
+        state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
 
         # System message describing all available tools
-        system_message = HumanMessage(content="""You are an HR assistant with access to 5 tools for searching company data.
+        system_message = self.HumanMessage(content="""You are an HR assistant with access to 5 tools for searching company data.
 
 **TOOL 1: search_emps_by_key_tool** - Employee information
 Fields: name, role, team, skills, location, timezone, email, jira_username, github_username,
@@ -277,17 +299,9 @@ Always format responses clearly with markdown.""")
                 value = str(tool_call["args"]["value"])
                 operator = str(tool_call["args"].get("operator", "equals"))
 
-                # Map tool names to actual tool functions
-                tool_map = {
-                    "search_emps_by_key_tool": search_emps_by_key_tool,
-                    "search_jira_tickets_tool": search_jira_tickets_tool,
-                    "search_deployments_tool": search_deployments_tool,
-                    "search_projects_tool": search_projects_tool,
-                    "search_sprints_tool": search_sprints_tool
-                }
-
-                if tool_name in tool_map:
-                    result = tool_map[tool_name].invoke({"key": key, "value": value, "operator": operator})
+                # Use stored tool map from __init__
+                if tool_name in self.tool_map:
+                    result = self.tool_map[tool_name].invoke({"key": key, "value": value, "operator": operator})
 
                     if result:
                         formatted_result = f"Found {len(result)} result(s) from {tool_name}:\n\n{result}"
@@ -302,16 +316,16 @@ Always format responses clearly with markdown.""")
                 # Create final response with tool results
                 final_messages = messages + [
                     response,
-                    HumanMessage(content=f"Tool results:\n\n{combined_results}")
+                    self.HumanMessage(content=f"Tool results:\n\n{combined_results}")
                 ]
                 final_response = await self.llm.ainvoke(final_messages)
-                state["chat_history"].append(AIMessage(content=final_response.content))
+                state["chat_history"].append(self.AIMessage(content=final_response.content))
             else:
                 # Strict routing - no results found
-                state["chat_history"].append(AIMessage(content="No matching data found for your query."))
+                state["chat_history"].append(self.AIMessage(content="No matching data found for your query."))
         else:
             # No tool call made - strict routing error
-            state["chat_history"].append(AIMessage(content="No matching data found for your query."))
+            state["chat_history"].append(self.AIMessage(content="No matching data found for your query."))
 
         return state
 
@@ -338,9 +352,9 @@ Always format responses clearly with markdown.""")
         )
 
         # Add edges to END
-        self.workflow.add_edge("general_conversation", END)
-        self.workflow.add_edge("documentation_query", END)
-        self.workflow.add_edge("data_query", END)
+        self.workflow.add_edge("general_conversation", self.END)
+        self.workflow.add_edge("documentation_query", self.END)
+        self.workflow.add_edge("data_query", self.END)
 
         # Compile the graph
         self.compiled_graph = self.workflow.compile()
@@ -357,9 +371,9 @@ Always format responses clearly with markdown.""")
         if chat_history:
             for msg in chat_history[:-1]:  # Exclude the current message (last one)
                 if msg["role"] == "user":
-                    langchain_history.append(HumanMessage(content=msg["content"]))
+                    langchain_history.append(self.HumanMessage(content=msg["content"]))
                 elif msg["role"] == "assistant":
-                    langchain_history.append(AIMessage(content=msg["content"]))
+                    langchain_history.append(self.AIMessage(content=msg["content"]))
 
         initial_state = {
             "user_query": user_query,
@@ -373,7 +387,7 @@ Always format responses clearly with markdown.""")
         # Return the last AI message
         if result["chat_history"]:
             last_message = result["chat_history"][-1]
-            if isinstance(last_message, AIMessage):
+            if isinstance(last_message, self.AIMessage):
                 return last_message.content
 
         return "I couldn't process your request."
