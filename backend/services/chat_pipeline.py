@@ -30,28 +30,40 @@ class StateAgent(TypedDict):
 
 class ChatPipeLine:
     def __init__(self):
-        self.workflow = StateGraph(StateAgent)
-        self.llm = ChatOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-            model="x-ai/grok-4.1-fast"
-        )
+        try:
+            self.workflow = StateGraph(StateAgent)
+            self.llm = ChatOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                model="x-ai/grok-4.1-fast"
+            )
+            self.intent_llm = ChatOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv("Hr_Nexus_Intent_routing"),
+                model="openai/gpt-oss-20b:free"
+            )
 
-        # Bind ALL 5 tools to the LLM
-        self.llm_with_tools = self.llm.bind_tools([
-            search_emps_by_key_tool,
-            search_jira_tickets_tool,
-            search_deployments_tool,
-            search_projects_tool,
-            search_sprints_tool
-        ])
+            # Bind ALL 5 tools to the LLM
+            self.llm_with_tools = self.llm.bind_tools([
+                search_emps_by_key_tool,
+                search_jira_tickets_tool,
+                search_deployments_tool,
+                search_projects_tool,
+                search_sprints_tool
+            ])
 
-        # Initialize RAG vector store
-        self.vectorstore = None
-        self.initialize_rag()
+            # Initialize RAG vector store
+            self.vectorstore = None
+            self.initialize_rag()
 
-        self.compiled_graph = None
-        self.init_graph()
+            self.compiled_graph = None
+            self.init_graph()
+
+            print("[INFO] ChatPipeLine initialized successfully")
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize ChatPipeLine: {e}")
+            # Re-raise to prevent half-initialized state
+            raise
 
     def initialize_rag(self):
         """Initialize RAG vector store for documentation queries"""
@@ -107,7 +119,8 @@ User Query: {user_query}
 Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
         messages = [HumanMessage(content=prompt.format(user_query=state["user_query"]))]
-        response = await self.llm.ainvoke(messages)
+        # Use lighter, faster LLM for intent classification
+        response = await self.intent_llm.ainvoke(messages)
         state["intent"] = response.content.strip().lower()
         return state
 
@@ -366,4 +379,12 @@ Always format responses clearly with markdown.""")
         return "I couldn't process your request."
 
 
-chat_pipe = ChatPipeLine()
+# Lazy initialization to prevent startup crashes
+_chat_pipe = None
+
+def get_chat_pipeline() -> ChatPipeLine:
+    """Get or create the chat pipeline instance (lazy initialization)"""
+    global _chat_pipe
+    if _chat_pipe is None:
+        _chat_pipe = ChatPipeLine()
+    return _chat_pipe

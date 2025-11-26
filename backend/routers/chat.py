@@ -8,7 +8,7 @@ from models.user import User
 from models.chat import Chat
 from models.message import Message
 from uuid import UUID
-from services.chat_pipeline import chat_pipe
+from services.chat_pipeline import get_chat_pipeline
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -190,7 +190,8 @@ async def create_message(
     ]
 
     # Send to LangGraph pipeline with chat history
-    response = await chat_pipe.run(message_data.content, chat_history)
+    chat_pipeline = get_chat_pipeline()
+    response = await chat_pipeline.run(message_data.content, chat_history)
 
     # Create assistant response
     assistant_response = Message(
