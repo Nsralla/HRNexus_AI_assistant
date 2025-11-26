@@ -225,12 +225,12 @@ class RAGDataLoader:
 
         return stats
 
-    def initialize_embeddings(self) -> HuggingFaceEmbeddings:
+    def initialize_embeddings(self):
         """
-        Initialize the HuggingFace embeddings model
+        Initialize the Cohere embeddings model
 
         Returns:
-            HuggingFaceEmbeddings instance
+            CohereEmbeddings instance
 
         Raises:
             ImportError: If vector database libraries are not installed
