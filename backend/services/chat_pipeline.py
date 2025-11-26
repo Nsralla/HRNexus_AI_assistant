@@ -65,17 +65,24 @@ class ChatPipeLine:
             self.vectorstore = None
 
     async def intent_classification(self, state: StateAgent) -> StateAgent:
-        """Classify user query intent into documentation or data_query"""
+        """Classify user query intent into conversation, documentation, or data_query"""
         prompt = """Classify the user's query intent into ONE of these categories:
 
-1. "documentation" - For questions about:
+1. "conversation" - For casual interactions:
+   - Greetings (hi, hello, hey, good morning, etc.)
+   - Identity questions (who are you, what are you, what can you do)
+   - Thank you / goodbye messages
+   - General chitchat or off-topic questions
+   - Questions about the assistant itself
+
+2. "documentation" - For questions about company policies/processes:
    - Policies (code review, escalation, etc.)
    - Processes (deployment, onboarding, etc.)
    - Guides (how-to questions, setup instructions)
    - Team structure and roles
    - General "how do I..." or "what is the process for..." questions
 
-2. "data_query" - For questions requiring specific data about:
+3. "data_query" - For questions requiring specific data:
    - Employees (who, team members, skills, capacity)
    - JIRA tickets (status, assignments, sprints, bugs)
    - Deployments (history, status, versions)
@@ -84,7 +91,7 @@ class ChatPipeLine:
 
 User Query: {user_query}
 
-Respond with ONLY one word: "documentation" or "data_query"."""
+Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
         messages = [HumanMessage(content=prompt.format(user_query=state["user_query"]))]
         response = await self.llm.ainvoke(messages)
@@ -93,8 +100,11 @@ Respond with ONLY one word: "documentation" or "data_query"."""
 
     def intent_routing(self, state: StateAgent) -> str:
         """Route to appropriate handler based on intent"""
-        print("[DeBUG] Intent classified as:", state["intent"])
-        if "documentation" in state["intent"]:
+        print("[DEBUG] Intent classified as:", state["intent"])
+
+        if "conversation" in state["intent"]:
+            return "general_conversation"
+        elif "documentation" in state["intent"]:
             return "documentation_query"
         else:
             return "data_query"
@@ -144,6 +154,41 @@ Provide a helpful, well-formatted answer based on the documentation above."""
             error_message = f"Error retrieving documentation: {str(e)}"
             print(f"[ERROR] {error_message}")
             state["chat_history"].append(AIMessage(content="An error occurred while searching documentation."))
+
+        return state
+
+    async def general_conversation(self, state: StateAgent) -> StateAgent:
+        """Handle general conversation, greetings, and identity questions"""
+        state["chat_history"].append(HumanMessage(content=state["user_query"]))
+
+        system_prompt = """You are HRNexus, an AI assistant for your company's HR and engineering operations.
+
+Your capabilities:
+- Answer questions about company policies and processes (code review, deployment, onboarding, etc.)
+- Search employee information (teams, skills, locations, capacity)
+- Query JIRA tickets (status, assignments, sprints, priorities)
+- Check deployment history (production, staging, versions, health)
+- View project details (progress, teams, tech stack, budgets)
+- Track sprint metrics (velocity, story points, burndown)
+
+When greeting users or answering identity questions:
+- Be friendly and professional
+- Briefly introduce yourself and your main capabilities
+- Encourage users to ask specific questions about employees, projects, documentation, etc.
+
+Keep responses concise and helpful."""
+
+        messages = [
+            HumanMessage(content=system_prompt),
+            HumanMessage(content=f"User: {state['user_query']}\n\nRespond naturally and helpfully.")
+        ]
+
+        try:
+            response = await self.llm.ainvoke(messages)
+            state["chat_history"].append(AIMessage(content=response.content))
+        except Exception as e:
+            print(f"[ERROR] General conversation failed: {e}")
+            state["chat_history"].append(AIMessage(content="Hi! I'm HRNexus, your HR assistant. How can I help you today?"))
 
         return state
 
@@ -248,6 +293,7 @@ Always format responses clearly with markdown.""")
         """Initialize and compile the workflow graph"""
         # Add nodes
         self.workflow.add_node("intent_classification", self.intent_classification)
+        self.workflow.add_node("general_conversation", self.general_conversation)
         self.workflow.add_node("documentation_query", self.documentation_query)
         self.workflow.add_node("data_query", self.data_query)
 
@@ -259,12 +305,14 @@ Always format responses clearly with markdown.""")
             "intent_classification",
             self.intent_routing,
             {
+                "general_conversation": "general_conversation",
                 "documentation_query": "documentation_query",
                 "data_query": "data_query"
             }
         )
 
         # Add edges to END
+        self.workflow.add_edge("general_conversation", END)
         self.workflow.add_edge("documentation_query", END)
         self.workflow.add_edge("data_query", END)
 
