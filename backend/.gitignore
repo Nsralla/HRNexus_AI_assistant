@@ -21,6 +21,8 @@ build/
 
 # ChromaDB
 chroma_data/
+chroma_db/
+
 *.chroma
 
 # IDE

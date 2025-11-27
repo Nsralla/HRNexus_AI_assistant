@@ -34,6 +34,7 @@ Thumbs.db
 *.db
 *.sqlite
 chroma_data/
+chroma_db/
 
 # Temporary files
 *.tmp

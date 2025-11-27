@@ -273,7 +273,7 @@ class RAGDataLoader:
         if not HAS_VECTOR_DB:
             raise ImportError(
                 "Vector database libraries not installed. "
-                "Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers"
+                "Install with: pip install langchain-cohere langchain-chroma"
             )
 
         if not documents:
@@ -381,7 +381,7 @@ class RAGDataLoader:
         if not HAS_VECTOR_DB:
             raise ImportError(
                 "Vector database libraries not installed. "
-                "Install with: pip install langchain-huggingface langchain-chroma torch sentence-transformers"
+                "Install with: pip install langchain-cohere langchain-chroma"
             )
 
         persist_path = Path(persist_directory)
