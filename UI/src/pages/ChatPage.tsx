@@ -4,6 +4,7 @@ import LeftSidebar from '../components/chat/LeftSidebar';
 import ChatArea from '../components/chat/ChatArea';
 import InputArea from '../components/chat/InputArea';
 import RightSidebar from '../components/chat/RightSidebar';
+import GuideCards from '../components/chat/GuideCards';
 import { chatService, type MessageResponse, type ChatResponse } from '../../services/chat.service';
 import { getAuthToken } from '../../services/api.config';
 
@@ -18,6 +19,7 @@ const ChatPage = () => {
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showGuideCards, setShowGuideCards] = useState(false);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -39,9 +41,11 @@ const ChatPage = () => {
         setCurrentChatId(latestChat.id);
         await loadMessages(latestChat.id);
       } else {
+        // No chats exist, create a new one and show guide cards
         const newChat = await chatService.createChat({ title: 'New Conversation' });
         setChats([newChat]);
         setCurrentChatId(newChat.id);
+        setShowGuideCards(true); // Show guide cards for new users
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize chat';
@@ -55,6 +59,8 @@ const ChatPage = () => {
       setError(null);
       const chatMessages = await chatService.getChatMessages(chatId);
       setMessages(chatMessages);
+      // Show guide cards if this is an empty chat
+      setShowGuideCards(chatMessages.length === 0);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages';
       setError(errorMessage);
@@ -67,6 +73,9 @@ const ChatPage = () => {
 
     const currentChat = chats.find(c => c.id === currentChatId);
     const isFirstMessage = messages.length === 0;
+
+    // Hide guide cards when sending a message
+    setShowGuideCards(false);
 
     // Create optimistic user message
     const optimisticUserMessage: MessageResponse = {
@@ -135,6 +144,7 @@ const ChatPage = () => {
       setChats((prev) => [newChat, ...prev]);
       setCurrentChatId(newChat.id);
       setMessages([]);
+      setShowGuideCards(true); // Show guide cards for new empty chat
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create new chat';
       setError(errorMessage);
@@ -227,8 +237,17 @@ const ChatPage = () => {
             leftSidebarOpen ? 'ml-72' : 'ml-0'
           }`}
         >
-          <ChatArea messages={messages} isLoading={isLoading || isSwitchingChat} />
-          <InputArea onSendMessage={handleSendMessage} disabled={isLoading || isSwitchingChat} />
+          {showGuideCards && messages.length === 0 ? (
+            <GuideCards
+              onSelectPrompt={handleSendMessage}
+              onClose={() => setShowGuideCards(false)}
+            />
+          ) : (
+            <>
+              <ChatArea messages={messages} isLoading={isLoading || isSwitchingChat} />
+              <InputArea onSendMessage={handleSendMessage} disabled={isLoading || isSwitchingChat} />
+            </>
+          )}
         </main>
 
         <RightSidebar
