@@ -102,11 +102,22 @@ class ChatPipeLine:
                 embedding_model="embed-english-v3.0",  # Cohere free embedding model
                 collection_name="hr_nexus_rag"
             )
+
+            # Try to load existing vector store
             self.vectorstore = rag_loader.load_existing_vectorstore("./chroma_db")
-            if self.vectorstore:
-                print("[INFO] RAG vector store loaded successfully")
+
+            # If it doesn't exist, create it
+            if not self.vectorstore:
+                print("[INFO] Vector store not found, creating new one...")
+                _, _, self.vectorstore = rag_loader.load_and_create_vectorstore(
+                    persist_directory="./chroma_db"
+                )
+                if self.vectorstore:
+                    print("[INFO] RAG vector store created successfully")
+                else:
+                    print("[WARNING] Failed to create RAG vector store")
             else:
-                print("[WARNING] RAG vector store not available")
+                print("[INFO] RAG vector store loaded successfully")
         except Exception as e:
             print(f"[ERROR] Failed to initialize RAG: {e}")
             self.vectorstore = None
