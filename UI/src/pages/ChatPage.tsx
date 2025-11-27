@@ -3,15 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import LeftSidebar from '../components/chat/LeftSidebar';
 import ChatArea from '../components/chat/ChatArea';
 import InputArea from '../components/chat/InputArea';
-import RightSidebar from '../components/chat/RightSidebar';
 import GuideCards from '../components/chat/GuideCards';
+import DatasetInfoPopup from '../components/chat/DatasetInfoPopup';
 import { chatService, type MessageResponse, type ChatResponse } from '../../services/chat.service';
 import { getAuthToken } from '../../services/api.config';
 
 const ChatPage = () => {
   const navigate = useNavigate();
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chats, setChats] = useState<ChatResponse[]>([]);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
@@ -250,10 +249,8 @@ const ChatPage = () => {
           )}
         </main>
 
-        <RightSidebar
-          isOpen={rightSidebarOpen}
-          onToggle={() => setRightSidebarOpen(!rightSidebarOpen)}
-        />
+        {/* Dataset Info Popup - appears as floating widget */}
+        <DatasetInfoPopup />
       </div>
     </div>
   );

@@ -29,6 +29,8 @@ class ChatPipeLine:
             from .deploymentsService import search_deployments_tool
             from .projectsService import search_projects_tool
             from .sprintsService import search_sprints_tool
+            from .meetingsService import search_meetings_tool
+            from .servicesService import search_services_tool
 
             # Store for use in methods
             self.HumanMessage = HumanMessage
@@ -47,13 +49,15 @@ class ChatPipeLine:
                 model="openai/gpt-oss-20b:free"
             )
 
-            # Bind ALL 5 tools to the LLM
+            # Bind ALL 7 tools to the LLM
             self.llm_with_tools = self.llm.bind_tools([
                 search_emps_by_key_tool,
                 search_jira_tickets_tool,
                 search_deployments_tool,
                 search_projects_tool,
-                search_sprints_tool
+                search_sprints_tool,
+                search_meetings_tool,
+                search_services_tool
             ])
 
             # Store tool map for later use
@@ -62,7 +66,9 @@ class ChatPipeLine:
                 "search_jira_tickets_tool": search_jira_tickets_tool,
                 "search_deployments_tool": search_deployments_tool,
                 "search_projects_tool": search_projects_tool,
-                "search_sprints_tool": search_sprints_tool
+                "search_sprints_tool": search_sprints_tool,
+                "search_meetings_tool": search_meetings_tool,
+                "search_services_tool": search_services_tool
             }
 
             # Initialize RAG vector store
@@ -252,11 +258,11 @@ Keep responses concise and helpful."""
         return state
 
     async def data_query(self, state: StateAgent) -> StateAgent:
-        """Handle structured data queries with ALL 5 tools"""
+        """Handle structured data queries with ALL 7 tools"""
         state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
 
         # System message describing all available tools
-        system_message = self.HumanMessage(content="""You are an HR assistant with access to 5 tools for searching company data.
+        system_message = self.HumanMessage(content="""You are an HR assistant with access to 7 tools for searching company data.
 
 **TOOL 1: search_emps_by_key_tool** - Employee information
 Fields: name, role, team, skills, location, timezone, email, jira_username, github_username,
@@ -278,6 +284,14 @@ Fields: id, name, key, description, status, lead, team, start_date, target_compl
 Fields: id, name, start_date, end_date, status, goal, total_story_points,
         completed_story_points, team_velocity, tickets
 
+**TOOL 6: search_meetings_tool** - Meetings
+Fields: id, title, type, date, duration_minutes, attendees, agenda, notes, action_items
+Types: sprint-planning, retrospective, standup, technical, security, team-sync, post-mortem
+
+**TOOL 7: search_services_tool** - Services/Microservices
+Fields: id, name, type, owner_team, primary_maintainer, status, uptime_percentage,
+        avg_response_time_ms, tech_stack, dependencies, current_version, deployment_frequency
+
 **OPERATORS** (all tools support these):
 - equals: Exact match (default)
 - greater_than, less_than, greater_equal, less_equal: Numeric comparisons
@@ -289,6 +303,8 @@ Fields: id, name, start_date, end_date, status, goal, total_story_points,
 - "failed deployments": search_deployments_tool(key='status', value='Failed', operator='equals')
 - "active projects": search_projects_tool(key='status', value='active', operator='equals')
 - "Sprint 24 details": search_sprints_tool(key='name', value='Sprint 24', operator='equals')
+- "sprint planning meetings": search_meetings_tool(key='type', value='sprint-planning', operator='equals')
+- "Backend services": search_services_tool(key='owner_team', value='Backend', operator='equals')
 
 IMPORTANT: Choose the appropriate tool based on what data the user is asking for.
 Always format responses clearly with markdown.""")
@@ -296,7 +312,7 @@ Always format responses clearly with markdown.""")
         # Create messages for the LLM with tool binding
         messages = [system_message] + state["chat_history"].copy()
 
-        # Invoke LLM with all 5 tools
+        # Invoke LLM with all 7 tools
         response = await self.llm_with_tools.ainvoke(messages)
 
         # Check if the model wants to use tools
