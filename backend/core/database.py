@@ -13,19 +13,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 is_pooler = "pooler.supabase.com" in DATABASE_URL if DATABASE_URL else False
 
 if is_pooler:
-    # For Supabase Session/Transaction Pooler: minimal pooling, let Supabase handle it
+    # For ANY Supabase Pooler (Session or Transaction): Use NullPool
+    # This prevents "{:shutdown, :db_termination}" errors by letting Supabase handle ALL pooling
+    from sqlalchemy.pool import NullPool
     engine = create_engine(
         DATABASE_URL,
-        pool_pre_ping=True,  # Test connections before using them
-        pool_size=1,  # Minimal pool size for pooler mode
-        max_overflow=0,  # No overflow for pooler
-        pool_recycle=60,  # Short recycle time for pooler
+        poolclass=NullPool,  # No SQLAlchemy pooling - Supabase pooler handles connections
         connect_args={
             "connect_timeout": 10,
         }
     )
 else:
-    # For direct connection: more aggressive pooling
+    # For direct connection: Use SQLAlchemy's connection pooling
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,

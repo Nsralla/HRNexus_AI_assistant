@@ -30,13 +30,23 @@ async def lifespan(app: FastAPI):
             logger.info("Database tables created successfully")
             break
         except Exception as e:
-            logger.error(f"Failed to create tables on attempt {attempt}: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Failed to create tables on attempt {attempt}: {error_msg}")
+
+            # Check for specific Supabase errors
+            if "db_termination" in error_msg or "shutdown" in error_msg:
+                logger.error("SUPABASE ERROR: Database pooler is terminating connections. This usually means:")
+                logger.error("  1. Database is paused (free tier) - Check Supabase dashboard")
+                logger.error("  2. Wrong pooler type - Try Transaction Pooler (port 6543) instead of Session Pooler (port 5432)")
+                logger.error("  3. Too many connections - Using NullPool to avoid connection pooling conflicts")
+
             if attempt < max_retries:
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
             else:
                 logger.error("Max retries reached. Application will start but database may not be ready.")
+                logger.error("Please check: 1) Supabase database status, 2) DATABASE_URL is correct, 3) Using Transaction Pooler")
                 # Don't raise - let the app start and handle DB errors per request
 
     yield
