@@ -152,12 +152,15 @@ async def create_message(
 ):
     """Receive a new message and save it to the database"""
 
+    logger.info(f"[DEBUG 1/11] Received message request for chat_id: {message_data.chat_id}")
+
     if not message_data.content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Message content is required"
         )
 
+    logger.info(f"[DEBUG 2/11] Validating chat exists and belongs to user")
     # Verify chat exists and belongs to current user
     chat = db.query(Chat).filter(Chat.id == message_data.chat_id).first()
     if not chat:
@@ -172,6 +175,7 @@ async def create_message(
             detail="You don't have permission to access this chat"
         )
 
+    logger.info(f"[DEBUG 3/11] Creating user message in database")
     # Create user message
     user_message = Message(
         chat_id=message_data.chat_id,
@@ -182,7 +186,9 @@ async def create_message(
     db.add(user_message)
     db.commit()
     db.refresh(user_message)
+    logger.info(f"[DEBUG 4/11] User message saved with ID: {user_message.id}")
 
+    logger.info(f"[DEBUG 5/11] Fetching chat history")
     # Get chat history for context
     previous_messages = db.query(Message).filter(
         Message.chat_id == message_data.chat_id
@@ -193,23 +199,33 @@ async def create_message(
         {"role": msg.role, "content": msg.content}
         for msg in previous_messages
     ]
+    logger.info(f"[DEBUG 6/11] Chat history loaded: {len(chat_history)} messages")
+
+    # Eagerly load user_id before async operations (NullPool closes connections)
+    user_id = current_user.id
+    logger.info(f"[DEBUG 7/11] Cached user_id: {user_id}")
 
     try:
+        logger.info(f"[DEBUG 8/11] Sending to chat pipeline...")
         # Send to LangGraph pipeline with chat history
         chat_pipeline = get_chat_pipeline()
         response = await chat_pipeline.run(message_data.content, chat_history)
+        logger.info(f"[DEBUG 9/11] Received AI response (length: {len(response)} chars)")
 
+        logger.info(f"[DEBUG 10/11] Creating assistant message in database")
         # Create assistant response
         assistant_response = Message(
             chat_id=message_data.chat_id,
-            user_id=current_user.id,
+            user_id=user_id,  # Use cached user_id instead of current_user.id
             content=response,
             role="assistant"
         )
         db.add(assistant_response)
         db.commit()
         db.refresh(assistant_response)
+        logger.info(f"[DEBUG 11/11] Assistant message saved with ID: {assistant_response.id}")
 
+        logger.info(f"[DEBUG SUCCESS] Message creation complete, returning response")
         return assistant_response
 
     except Exception as e:
