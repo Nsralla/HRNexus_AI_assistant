@@ -9,12 +9,21 @@ load_dotenv()
 # Get database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Create SQLAlchemy engine
+# Create SQLAlchemy engine with improved connection handling for Supabase
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
+    pool_pre_ping=True,  # Test connections before using them
     pool_size=5,
-    max_overflow=10
+    max_overflow=10,
+    pool_recycle=300,  # Recycle connections after 5 minutes (300 seconds)
+    pool_timeout=30,  # Wait up to 30 seconds for a connection
+    connect_args={
+        "connect_timeout": 10,  # Connection timeout in seconds
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    }
 )
 
 # Create session factory
@@ -28,5 +37,9 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

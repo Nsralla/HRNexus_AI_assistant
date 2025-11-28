@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends, HTTPException
 from schemas.message import MessageCreate, MessageResponse
 from schemas.chat import ChatCreate, ChatUpdate, ChatResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError, DBAPIError
 from core.database import get_db
 from core.auth import get_current_user
 from models.user import User
@@ -9,6 +10,10 @@ from models.chat import Chat
 from models.message import Message
 from uuid import UUID
 from services.chat_pipeline import get_chat_pipeline
+import logging
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -189,22 +194,75 @@ async def create_message(
         for msg in previous_messages
     ]
 
-    # Send to LangGraph pipeline with chat history
-    chat_pipeline = get_chat_pipeline()
-    response = await chat_pipeline.run(message_data.content, chat_history)
+    try:
+        # Send to LangGraph pipeline with chat history
+        chat_pipeline = get_chat_pipeline()
+        response = await chat_pipeline.run(message_data.content, chat_history)
 
-    # Create assistant response
-    assistant_response = Message(
-        chat_id=message_data.chat_id,
-        user_id=current_user.id,
-        content=response,
-        role="assistant"
-    )
-    db.add(assistant_response)
-    db.commit()
-    db.refresh(assistant_response)
+        # Create assistant response
+        assistant_response = Message(
+            chat_id=message_data.chat_id,
+            user_id=current_user.id,
+            content=response,
+            role="assistant"
+        )
+        db.add(assistant_response)
+        db.commit()
+        db.refresh(assistant_response)
 
-    return assistant_response
+        return assistant_response
+
+    except Exception as e:
+        # Check if it's a rate limit error from OpenRouter
+        error_message = str(e)
+
+        # Detailed logging for debugging
+        logger.error(f"=== CHAT PIPELINE ERROR ===")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error message: {error_message}")
+        logger.error(f"=========================")
+
+        if "429" in error_message or "rate limit" in error_message.lower():
+            # Extract more details from the error
+            if "free-models-per-day" in error_message:
+                logger.error(f"FREE MODEL RATE LIMIT: User hit free model daily limit on OpenRouter")
+                detail_msg = "Free model daily limit reached. The system is using a free-tier AI model (openai/gpt-oss-20b:free) that has a 50 request/day limit. Please contact support to upgrade to a paid model."
+            elif "Intent classification failed" in error_message:
+                logger.error(f"RATE LIMIT in Intent Classification model")
+                detail_msg = "AI service rate limit exceeded during intent classification. Please try again later."
+            elif "Cohere" in error_message or "embed" in error_message.lower():
+                logger.error(f"RATE LIMIT in Cohere Embeddings")
+                detail_msg = "AI embedding service rate limit exceeded. Please try again later."
+            else:
+                detail_msg = "AI service rate limit exceeded. Please try again later."
+
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=detail_msg
+            )
+
+        # Check for OpenAI/OpenRouter API errors
+        if "openai" in error_message.lower() or "openrouter" in error_message.lower():
+            logger.error(f"AI service error: {error_message}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI service is temporarily unavailable. Please try again in a moment."
+            )
+
+        # Database errors
+        if isinstance(e, (OperationalError, DBAPIError)):
+            logger.error(f"Database error during message creation: {error_message}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Service temporarily unavailable. Please try again."
+            )
+
+        # Generic error
+        logger.error(f"Unexpected error during message creation: {error_message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing your message. Please try again."
+        )
 
 
 @router.get("/{chat_id}/messages", response_model=list[MessageResponse])

@@ -43,10 +43,11 @@ class ChatPipeLine:
                 api_key=os.getenv("OPENROUTER_API_KEY"),
                 model="x-ai/grok-4.1-fast"
             )
+         
             self.intent_llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=os.getenv("Hr_Nexus_Intent_routing"),
-                model="openai/gpt-oss-20b:free"
+                model="mistralai/ministral-8b"  # $0.10/M tokens - cheap, fast, no daily limits
             )
 
             # Bind ALL 7 tools to the LLM
@@ -157,11 +158,21 @@ User Query: {user_query}
 
 Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
-        messages = [self.HumanMessage(content=prompt.format(user_query=state["user_query"]))]
-        # Use lighter, faster LLM for intent classification
-        response = await self.intent_llm.ainvoke(messages)
-        state["intent"] = response.content.strip().lower()
-        return state
+        try:
+            messages = [self.HumanMessage(content=prompt.format(user_query=state["user_query"]))]
+            # Use lighter, faster LLM for intent classification
+            print(f"[DEBUG] Calling intent classification LLM with model: {self.intent_llm.model_name}")
+            response = await self.intent_llm.ainvoke(messages)
+            state["intent"] = response.content.strip().lower()
+            print(f"[DEBUG] Intent classification successful: {state['intent']}")
+            return state
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[ERROR] Intent classification failed with model '{self.intent_llm.model_name}': {error_msg}")
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                print(f"[ERROR] RATE LIMIT HIT on intent classification model: {self.intent_llm.model_name}")
+                print(f"[ERROR] API Key used: {os.getenv('Hr_Nexus_Intent_routing', 'NOT_SET')[:15]}...")
+            raise Exception(f"Intent classification failed (model: {self.intent_llm.model_name}): {error_msg}")
 
     def intent_routing(self, state: StateAgent) -> str:
         """Route to appropriate handler based on intent"""
@@ -185,9 +196,10 @@ Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
 
         try:
             # Retrieve relevant documents from vector store
+            print(f"[DEBUG] Calling vectorstore similarity_search with Cohere embeddings")
             relevant_docs = self.vectorstore.similarity_search(state["user_query"], k=3)
-            print(f"[DeBUG] Retrieved {len(relevant_docs)} relevant documents for query.")
-            print(f"[DeBUG] Documents: {[doc.metadata.get('filename', 'unknown') for doc in relevant_docs]}")
+            print(f"[DEBUG] Retrieved {len(relevant_docs)} relevant documents for query.")
+            print(f"[DEBUG] Documents: {[doc.metadata.get('filename', 'unknown') for doc in relevant_docs]}")
 
             if not relevant_docs:
                 response_message = "No relevant documentation found for your query."
@@ -218,6 +230,9 @@ Provide a helpful, well-formatted answer based on the documentation above."""
         except Exception as e:
             error_message = f"Error retrieving documentation: {str(e)}"
             print(f"[ERROR] {error_message}")
+            if "429" in error_message or "rate limit" in error_message.lower():
+                print(f"[ERROR] RATE LIMIT HIT during documentation query (likely Cohere embeddings)")
+                print(f"[ERROR] Check COHERE_API_KEY limits")
             state["chat_history"].append(self.AIMessage(content="An error occurred while searching documentation."))
 
         return state
