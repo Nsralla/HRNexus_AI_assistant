@@ -408,31 +408,46 @@ Always format responses clearly with markdown.""")
             user_query: The current user query
             chat_history: List of previous messages in format [{"role": "user/assistant", "content": "..."}]
         """
+        print(f"[PIPELINE DEBUG 1/6] Pipeline run started for query: {user_query[:50]}...")
+
         # Convert chat history to LangChain message format
         langchain_history = []
         if chat_history:
+            print(f"[PIPELINE DEBUG 2/6] Converting {len(chat_history)} history messages")
             for msg in chat_history[:-1]:  # Exclude the current message (last one)
                 if msg["role"] == "user":
                     langchain_history.append(self.HumanMessage(content=msg["content"]))
                 elif msg["role"] == "assistant":
                     langchain_history.append(self.AIMessage(content=msg["content"]))
+            print(f"[PIPELINE DEBUG 3/6] Converted to {len(langchain_history)} LangChain messages")
+        else:
+            print(f"[PIPELINE DEBUG 2/6] No chat history provided")
 
         initial_state = {
             "user_query": user_query,
             "intent": "",
             "chat_history": langchain_history
         }
+        print(f"[PIPELINE DEBUG 4/6] Initial state created, executing graph...")
 
-        # Execute the graph
-        result = await self.compiled_graph.ainvoke(initial_state)
+        try:
+            # Execute the graph
+            result = await self.compiled_graph.ainvoke(initial_state)
+            print(f"[PIPELINE DEBUG 5/6] Graph execution complete, processing result...")
 
-        # Return the last AI message
-        if result["chat_history"]:
-            last_message = result["chat_history"][-1]
-            if isinstance(last_message, self.AIMessage):
-                return last_message.content
+            # Return the last AI message
+            if result["chat_history"]:
+                last_message = result["chat_history"][-1]
+                if isinstance(last_message, self.AIMessage):
+                    response_length = len(last_message.content)
+                    print(f"[PIPELINE DEBUG 6/6] Pipeline run successful, returning response ({response_length} chars)")
+                    return last_message.content
 
-        return "I couldn't process your request."
+            print(f"[PIPELINE WARNING] No AI message found in result, returning fallback")
+            return "I couldn't process your request."
+        except Exception as e:
+            print(f"[PIPELINE ERROR] Pipeline execution failed: {type(e).__name__}: {str(e)}")
+            raise
 
 
 # Lazy initialization to prevent startup crashes
