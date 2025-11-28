@@ -58,10 +58,12 @@ const ChatPage = () => {
     }
   };
 
-  const loadMessages = async (chatId: string) => {
+  const loadMessages = async (chatId: string, showLoading: boolean = true) => {
     try {
       setError(null);
-      setIsLoadingMessages(true);
+      if (showLoading) {
+        setIsLoadingMessages(true);
+      }
       const chatMessages = await chatService.getChatMessages(chatId);
       setMessages(chatMessages);
       // Show guide cards if this is an empty chat
@@ -71,7 +73,9 @@ const ChatPage = () => {
       setError(errorMessage);
       console.error('Failed to load messages:', err);
     } finally {
-      setIsLoadingMessages(false);
+      if (showLoading) {
+        setIsLoadingMessages(false);
+      }
     }
   };
 
@@ -113,7 +117,8 @@ const ChatPage = () => {
       }
 
       // Reload messages to get the actual messages with correct IDs and AI response
-      await loadMessages(currentChatId);
+      // Don't show loading spinner since we already have the chat UI visible
+      await loadMessages(currentChatId, false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
       setError(errorMessage);
