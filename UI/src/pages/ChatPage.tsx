@@ -17,6 +17,8 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGuideCards, setShowGuideCards] = useState(false);
 
@@ -32,6 +34,7 @@ const ChatPage = () => {
   const initializeChat = async () => {
     try {
       setError(null);
+      setIsLoadingChats(true);
       const userChats = await chatService.getUserChats();
       setChats(userChats);
 
@@ -50,12 +53,15 @@ const ChatPage = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize chat';
       setError(errorMessage);
       console.error('Failed to initialize chat:', err);
+    } finally {
+      setIsLoadingChats(false);
     }
   };
 
   const loadMessages = async (chatId: string) => {
     try {
       setError(null);
+      setIsLoadingMessages(true);
       const chatMessages = await chatService.getChatMessages(chatId);
       setMessages(chatMessages);
       // Show guide cards if this is an empty chat
@@ -64,6 +70,8 @@ const ChatPage = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load messages';
       setError(errorMessage);
       console.error('Failed to load messages:', err);
+    } finally {
+      setIsLoadingMessages(false);
     }
   };
 
@@ -229,6 +237,7 @@ const ChatPage = () => {
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
           isCreatingChat={isCreatingChat}
+          isLoadingChats={isLoadingChats}
         />
 
         <main
@@ -236,7 +245,19 @@ const ChatPage = () => {
             leftSidebarOpen ? 'ml-72' : 'ml-0'
           }`}
         >
-          {showGuideCards && messages.length === 0 ? (
+          {isLoadingChats || isLoadingMessages ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <svg className="animate-spin h-12 w-12 text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-gray-500 text-sm">
+                  {isLoadingChats ? 'Loading chats...' : 'Loading messages...'}
+                </p>
+              </div>
+            </div>
+          ) : showGuideCards && messages.length === 0 ? (
             <GuideCards
               onSelectPrompt={handleSendMessage}
               onClose={() => setShowGuideCards(false)}
