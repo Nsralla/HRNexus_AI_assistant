@@ -9,22 +9,38 @@ load_dotenv()
 # Get database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Create SQLAlchemy engine with improved connection handling for Supabase
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,  # Test connections before using them
-    pool_size=5,
-    max_overflow=10,
-    pool_recycle=300,  # Recycle connections after 5 minutes (300 seconds)
-    pool_timeout=30,  # Wait up to 30 seconds for a connection
-    connect_args={
-        "connect_timeout": 10,  # Connection timeout in seconds
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5,
-    }
-)
+# Detect if using Supabase pooler and adjust settings accordingly
+is_pooler = "pooler.supabase.com" in DATABASE_URL if DATABASE_URL else False
+
+if is_pooler:
+    # For Supabase Session/Transaction Pooler: minimal pooling, let Supabase handle it
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Test connections before using them
+        pool_size=1,  # Minimal pool size for pooler mode
+        max_overflow=0,  # No overflow for pooler
+        pool_recycle=60,  # Short recycle time for pooler
+        connect_args={
+            "connect_timeout": 10,
+        }
+    )
+else:
+    # For direct connection: more aggressive pooling
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=300,
+        pool_timeout=30,
+        connect_args={
+            "connect_timeout": 10,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        }
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

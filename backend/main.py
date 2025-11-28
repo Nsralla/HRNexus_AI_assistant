@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+import logging
+import time
 
 from core.database import engine, Base
 from routers import auth, chat
@@ -10,14 +12,37 @@ from routers import auth, chat
 # Load environment variables
 load_dotenv()
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Create database tables
-    Base.metadata.create_all(bind=engine)
+    # Startup: Create database tables with retry logic
+    max_retries = 5
+    retry_delay = 2  # seconds
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"Attempting to create database tables (attempt {attempt}/{max_retries})...")
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+            break
+        except Exception as e:
+            logger.error(f"Failed to create tables on attempt {attempt}: {str(e)}")
+            if attempt < max_retries:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error("Max retries reached. Application will start but database may not be ready.")
+                # Don't raise - let the app start and handle DB errors per request
+
     yield
-    # Shutdown: Add cleanup here if needed
-    pass
+    # Shutdown: Dispose of the engine connection pool
+    engine.dispose()
+    logger.info("Database connection pool disposed")
 
 # Create FastAPI app with lifespan
 app = FastAPI(
