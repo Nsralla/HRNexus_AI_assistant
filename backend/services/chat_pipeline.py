@@ -276,7 +276,10 @@ Keep responses concise and helpful."""
 
     async def data_query(self, state: StateAgent) -> StateAgent:
         """Handle structured data queries with ALL 7 tools"""
+        print(f"[DATA_QUERY DEBUG 1/8] Starting data_query for: {state['user_query'][:50]}...")
+
         state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
+        print(f"[DATA_QUERY DEBUG 2/8] Added user query to chat history")
 
         # System message describing all available tools
         system_message = self.HumanMessage(content="""You are an HR assistant with access to 7 tools for searching company data.
@@ -328,16 +331,21 @@ Always format responses clearly with markdown.""")
 
         # Create messages for the LLM with tool binding
         messages = [system_message] + state["chat_history"].copy()
+        print(f"[DATA_QUERY DEBUG 3/8] Created message list with {len(messages)} messages")
 
         # Invoke LLM with all 7 tools
+        print(f"[DATA_QUERY DEBUG 4/8] Invoking LLM with tools...")
         response = await self.llm_with_tools.ainvoke(messages)
+        print(f"[DATA_QUERY DEBUG 5/8] LLM response received, checking for tool calls...")
 
         # Check if the model wants to use tools
         if response.tool_calls:
+            print(f"[DATA_QUERY DEBUG 6/8] Found {len(response.tool_calls)} tool calls")
             tool_results = []
 
             # Execute all tool calls
             for tool_call in response.tool_calls:
+                print(f"[DATA_QUERY DEBUG 6.1/8] Executing tool: {tool_call['name']}")
                 tool_name = tool_call["name"]
                 key = str(tool_call["args"]["key"])
                 value = str(tool_call["args"]["value"])
@@ -346,6 +354,7 @@ Always format responses clearly with markdown.""")
                 # Use stored tool map from __init__
                 if tool_name in self.tool_map:
                     result = self.tool_map[tool_name].invoke({"key": key, "value": value, "operator": operator})
+                    print(f"[DATA_QUERY DEBUG 6.2/8] Tool {tool_name} returned: {len(str(result))} chars")
 
                     if result:
                         formatted_result = f"Found {len(result)} result(s) from {tool_name}:\n\n{result}"
@@ -356,19 +365,37 @@ Always format responses clearly with markdown.""")
             # Combine all tool results
             if tool_results:
                 combined_results = "\n\n---\n\n".join(tool_results)
+                print(f"[DATA_QUERY DEBUG 7/8] Combined results: {len(combined_results)} chars, sending to LLM for formatting...")
 
                 # Create final response with tool results
                 final_messages = messages + [
                     response,
                     self.HumanMessage(content=f"Tool results:\n\n{combined_results}")
                 ]
-                final_response = await self.llm.ainvoke(final_messages)
-                state["chat_history"].append(self.AIMessage(content=final_response.content))
+
+                try:
+                    final_response = await self.llm.ainvoke(final_messages)
+                    response_content = final_response.content if hasattr(final_response, 'content') else str(final_response)
+                    print(f"[DATA_QUERY DEBUG 7.2/8] Final response length: {len(response_content)} chars")
+
+                    # Ensure response is not empty
+                    if not response_content or not response_content.strip():
+                        print(f"[DATA_QUERY WARNING] LLM returned empty response, using tool results directly")
+                        response_content = combined_results
+
+                    state["chat_history"].append(self.AIMessage(content=response_content))
+                    print(f"[DATA_QUERY DEBUG 8/8] Response added to chat history")
+                except Exception as e:
+                    print(f"[DATA_QUERY ERROR] Failed to get final response from LLM: {e}")
+                    state["chat_history"].append(self.AIMessage(content=combined_results))
+                    print(f"[DATA_QUERY DEBUG 8/8] Using tool results directly due to error")
             else:
                 # Strict routing - no results found
+                print(f"[DATA_QUERY DEBUG 8/8] No tool results, returning 'no data found' message")
                 state["chat_history"].append(self.AIMessage(content="No matching data found for your query."))
         else:
             # No tool call made - strict routing error
+            print(f"[DATA_QUERY DEBUG 8/8] No tool calls made by LLM")
             state["chat_history"].append(self.AIMessage(content="No matching data found for your query."))
 
         return state
