@@ -21,7 +21,7 @@ class ChatPipeLine:
     def __init__(self):
         try:
             # Import heavy dependencies only when initializing
-            from langchain_core.messages import HumanMessage, AIMessage
+            from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
             from langgraph.graph import StateGraph, END
             from langchain_openai import ChatOpenAI
             from .employeesService import search_emps_by_key_tool
@@ -35,6 +35,7 @@ class ChatPipeLine:
             # Store for use in methods
             self.HumanMessage = HumanMessage
             self.AIMessage = AIMessage
+            self.SystemMessage = SystemMessage
             self.END = END
 
             self.workflow = StateGraph(StateAgent)
@@ -372,6 +373,18 @@ Always format responses clearly with markdown.""")
                     response,
                     self.HumanMessage(content=f"Tool results:\n\n{combined_results}")
                 ]
+                final_messages.append(
+                    self.SystemMessage(
+                        content=(
+                            "IMPORTANT: Do NOT call any tools now. "
+                            "You have already received tool results. "
+                            "Your job is ONLY to summarize, organize, or format the provided tool results "
+                            "into a clean, helpful answer for the user. "
+                            "Do NOT request or generate additional tool calls."
+                        )
+                    )
+                )
+
 
                 try:
                     final_response = await self.llm.ainvoke(final_messages)
