@@ -106,18 +106,9 @@ const LeftSidebar = ({
     setDeleteConfirmId(null);
   };
 
-  // const quickActions = [
-  //   { icon: '🔍', label: 'HR Policies', color: 'from-blue-500 to-cyan-500' },
-  //   { icon: '📄', label: 'Employee Records', color: 'from-purple-500 to-pink-500' },
-  //   { icon: '📝', label: 'Leaves & Requests', color: 'from-orange-500 to-red-500' },
-  //   { icon: '🏢', label: 'Departments & Teams', color: 'from-green-500 to-emerald-500' },
-  //   { icon: '📊', label: 'HR Analytics', color: 'from-indigo-500 to-purple-500' }
-  // ];
-
+ 
   const integrations = [
     { name: 'Jira', icon: 'J', connected: true },
-    { name: 'Confluence', icon: 'C', connected: true },
-    { name: 'HRIS', icon: 'H', connected: false },
     { name: 'SQL Sources', icon: 'S', connected: true }
   ];
 
@@ -191,26 +182,6 @@ const LeftSidebar = ({
               '+ New Chat'
             )}
           </motion.button>
-
-          {/* Quick Actions */}
-          {/* <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Quick Actions</h3>
-            <div className="space-y-2">
-              {quickActions.map((action, index) => (
-                <motion.button
-                  key={index}
-                  whileHover={{ x: 5, backgroundColor: 'rgba(74, 125, 255, 0.1)' }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:text-white transition-all"
-                >
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center text-sm`}>
-                    {action.icon}
-                  </div>
-                  <span className="text-sm font-medium">{action.label}</span>
-                </motion.button>
-              ))}
-            </div>
-          </section> */}
-
           {/* Conversation History */}
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Conversation History</h3>

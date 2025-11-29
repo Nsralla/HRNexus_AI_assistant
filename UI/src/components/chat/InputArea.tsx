@@ -8,15 +8,12 @@ interface InputAreaProps {
 
 const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
   const [inputValue, setInputValue] = useState('');
-  const [showPlugins, setShowPlugins] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string>('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const plugins = [
-    { icon: '📊', label: 'Generate report', color: 'from-purple-500 to-pink-500' },
-  ];
+ 
 
   const MAX_FILES = 4;
   const ALLOWED_EXTENSIONS = ['.md', '.json'];
@@ -60,9 +57,6 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
     setFileError('');
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,88 +159,7 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
             whileFocus={{ boxShadow: '0 0 0 3px rgba(74, 125, 255, 0.1)' }}
             className="rounded-3xl border border-gray-300 flex items-end gap-3 px-6 py-4 transition-all"
           >
-            {/* Left Actions */}
-            <div className="flex items-center gap-2 pb-1">
-              {/* Upload Button */}
-              <motion.button
-                type="button"
-                onClick={handleUploadClick}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors relative ${
-                  selectedFiles.length > 0
-                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                    : 'text-gray-600 hover:bg-white'
-                }`}
-                title={`Upload files (${selectedFiles.length}/${MAX_FILES})`}
-              >
-                <span className="text-xl">📎</span>
-                {selectedFiles.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center">
-                    {selectedFiles.length}
-                  </span>
-                )}
-              </motion.button>
-
-              {/* Plugins Dropdown */}
-              <div className="relative">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowPlugins(!showPlugins)}
-                  className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-white rounded-xl transition-colors"
-                  title="Plugins"
-                >
-                  <span className="text-xl">🧩</span>
-                </motion.button>
-
-                {/* Plugins Menu */}
-                {showPlugins && (
-                  <>
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-2xl shadow-hover border border-gray-200 p-2 z-50"
-                    >
-                      <div className="text-xs font-semibold text-gray-500 px-3 py-2">Quick Actions</div>
-                      {plugins.map((plugin, index) => (
-                        <motion.button
-                          key={index}
-                          type="button"
-                          whileHover={{ x: 4, backgroundColor: 'rgba(74, 125, 255, 0.05)' }}
-                          onClick={() => {
-                            setInputValue(plugin.label);
-                            setShowPlugins(false);
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors"
-                        >
-                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${plugin.color} flex items-center justify-center text-sm`}>
-                            {plugin.icon}
-                          </div>
-                          <span className="text-sm font-medium text-gray-700">{plugin.label}</span>
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowPlugins(false)}
-                    />
-                  </>
-                )}
-              </div>
-
-              {/* Voice Input */}
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-white rounded-xl transition-colors"
-                title="Voice input"
-              >
-                <span className="text-xl">🎤</span>
-              </motion.button>
-            </div>
+          
 
             {/* Text Input */}
             <textarea
@@ -254,7 +167,7 @@ const InputArea = ({ onSendMessage, disabled = false }: InputAreaProps) => {
               value={inputValue}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything... e.g. Who's on leave next week?"
+              placeholder="Ask anything... e.g. Who's on the backend team?"
               disabled={disabled}
               className="flex-grow bg-transparent resize-none focus:outline-none text-gray-800 placeholder-gray-400 max-h-[150px] min-h-[24px] leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
               rows={1}

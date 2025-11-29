@@ -71,6 +71,7 @@ const Hero = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="px-8 py-4 border-2 border-gray-300 text-primary rounded-2xl font-semibold text-lg hover:border-accent transition-all"
+                onClick={() => window.open("https://drive.google.com/drive/folders/1-6VfbKDd5PNpJbRLSmIu6Wro-nbs5023?usp=sharing", "_blank")}
               >
                 Watch How It Works
               </motion.button>

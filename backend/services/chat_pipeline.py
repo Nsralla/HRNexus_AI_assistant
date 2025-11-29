@@ -153,6 +153,8 @@ class ChatPipeLine:
    - Deployments (history, status, versions)
    - Projects (progress, teams, tech stack)
    - Sprints (velocity, story points, burndown)
+   - Services/Microservices (status, uptime, performance, tech stack, ownership)
+   - Meetings (sprint planning, retrospectives, standups, attendees, action items)
 
 User Query: {user_query}
 

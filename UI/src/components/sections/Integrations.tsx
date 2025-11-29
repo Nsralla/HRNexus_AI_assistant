@@ -50,13 +50,7 @@ const Integrations = () => {
           className="text-center mt-12"
         >
           <p className="text-gray-600 mb-4">And many more...</p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-          >
-            View All Integrations
-          </motion.button>
+          
         </motion.div>
       </div>
     </section>

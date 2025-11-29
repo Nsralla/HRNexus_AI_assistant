@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const FinalCTA = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-24 bg-neutral relative overflow-hidden">
       {/* Background Elements */}
@@ -59,6 +61,7 @@ const FinalCTA = () => {
                   whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(74, 125, 255, 0.5)' }}
                   whileTap={{ scale: 0.95 }}
                   className="px-10 py-5 bg-white text-primary rounded-2xl font-bold text-lg shadow-2xl hover:shadow-accent/50 transition-all"
+                  onClick={()=> navigate("/login")}
                 >
                   Get Started Free
                 </motion.button>
