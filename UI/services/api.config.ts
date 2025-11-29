@@ -52,7 +52,20 @@ export const apiRequest = async <T>(
           errorMessage = error.detail || 'Server error. Please try again later.';
           break;
         case 401:
-          errorMessage = error.detail || 'Invalid credentials';
+          // Handle expired/invalid token
+          removeAuthToken();
+          // Check if we're not already on the login page to avoid redirect loops
+          if (!window.location.pathname.includes('/login')) {
+            // Store message for login page to display
+            sessionStorage.setItem('authMessage', 'Your session has expired. Please log in again.');
+            // Redirect to login after a brief delay to allow error message to be seen
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 1500);
+            errorMessage = 'Your session has expired. Redirecting to login...';
+          } else {
+            errorMessage = error.detail || 'Invalid credentials';
+          }
           break;
         case 403:
           errorMessage = 'You do not have permission to access this resource';
