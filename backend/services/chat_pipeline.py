@@ -42,7 +42,7 @@ class ChatPipeLine:
             self.llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=os.getenv("OPENROUTER_API_KEY"),
-                model="x-ai/grok-4.1-fast"
+                model="x-ai/grok-4.1-fast:free"
             )
          
             self.intent_llm = ChatOpenAI(
