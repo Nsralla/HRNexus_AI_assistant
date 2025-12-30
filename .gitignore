@@ -2,10 +2,11 @@
 .env
 .env.local
 .env.*.local
-
+backend/.env
+env
 # Dependencies
 node_modules/
-
+UI/package-lock.json
 # Python
 __pycache__/
 *.py[cod]

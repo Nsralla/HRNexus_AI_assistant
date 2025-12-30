@@ -19,3 +19,6 @@ email-validator
 langchain-chroma
 langchain-cohere
 langchain-text-splitters
+fastmcp
+crewai
+pyyaml

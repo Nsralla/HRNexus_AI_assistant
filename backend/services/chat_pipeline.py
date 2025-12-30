@@ -1,6 +1,12 @@
 import os
 from dotenv import load_dotenv
 from typing import TypedDict, TYPE_CHECKING
+from prompts import (
+    INTENT_CLASSIFICATION_PROMPT,
+    DOCUMENTATION_QUERY_PROMPT,
+    GENERAL_CONVERSATION_SYSTEM_PROMPT,
+    DATA_QUERY_SYSTEM_PROMPT,
+)
 
 # Lazy imports - only load heavy dependencies when needed
 if TYPE_CHECKING:
@@ -48,7 +54,7 @@ class ChatPipeLine:
             self.intent_llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=os.getenv("Hr_Nexus_Intent_routing"),
-                model="mistralai/ministral-8b"  # $0.10/M tokens - cheap, fast, no daily limits
+                model="mistralai/ministral-8b"  
             )
 
             # Bind ALL 7 tools to the LLM
@@ -132,37 +138,9 @@ class ChatPipeLine:
 
     async def intent_classification(self, state: StateAgent) -> StateAgent:
         """Classify user query intent into conversation, documentation, or data_query"""
-        prompt = """Classify the user's query intent into ONE of these categories:
-
-1. "conversation" - For casual interactions:
-   - Greetings (hi, hello, hey, good morning, etc.)
-   - Identity questions (who are you, what are you, what can you do)
-   - Thank you / goodbye messages
-   - General chitchat or off-topic questions
-   - Questions about the assistant itself
-
-2. "documentation" - For questions about company policies/processes:
-   - Policies (code review, escalation, etc.)
-   - Processes (deployment, onboarding, etc.)
-   - Guides (how-to questions, setup instructions)
-   - Team structure and roles
-   - General "how do I..." or "what is the process for..." questions
-
-3. "data_query" - For questions requiring specific data:
-   - Employees (who, team members, skills, capacity)
-   - JIRA tickets (status, assignments, sprints, bugs)
-   - Deployments (history, status, versions)
-   - Projects (progress, teams, tech stack)
-   - Sprints (velocity, story points, burndown)
-   - Services/Microservices (status, uptime, performance, tech stack, ownership)
-   - Meetings (sprint planning, retrospectives, standups, attendees, action items)
-
-User Query: {user_query}
-
-Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
-
         try:
-            messages = [self.HumanMessage(content=prompt.format(user_query=state["user_query"]))]
+            prompt = INTENT_CLASSIFICATION_PROMPT.format(user_query=state["user_query"])
+            messages = [self.HumanMessage(content=prompt)]
             # Use lighter, faster LLM for intent classification
             print(f"[DEBUG] Calling intent classification LLM with model: {self.intent_llm.model_name}")
             response = await self.intent_llm.ainvoke(messages)
@@ -217,15 +195,10 @@ Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
             context = "\n\n---\n\n".join(context_parts)
 
             # Generate answer using LLM with context
-            prompt = f"""Using the following documentation, answer the user's question.
-Be concise but comprehensive. Use markdown formatting for clarity.
-
-Documentation:
-{context}
-
-User Question: {state["user_query"]}
-
-Provide a helpful, well-formatted answer based on the documentation above."""
+            prompt = DOCUMENTATION_QUERY_PROMPT.format(
+                context=context,
+                user_query=state["user_query"]
+            )
 
             response = await self.llm.ainvoke([self.HumanMessage(content=prompt)])
             state["chat_history"].append(self.AIMessage(content=response.content))
@@ -244,25 +217,8 @@ Provide a helpful, well-formatted answer based on the documentation above."""
         """Handle general conversation, greetings, and identity questions"""
         state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
 
-        system_prompt = """You are HRNexus, an AI assistant for your company's HR and engineering operations.
-
-Your capabilities:
-- Answer questions about company policies and processes (code review, deployment, onboarding, etc.)
-- Search employee information (teams, skills, locations, capacity)
-- Query JIRA tickets (status, assignments, sprints, priorities)
-- Check deployment history (production, staging, versions, health)
-- View project details (progress, teams, tech stack, budgets)
-- Track sprint metrics (velocity, story points, burndown)
-
-When greeting users or answering identity questions:
-- Be friendly and professional
-- Briefly introduce yourself and your main capabilities
-- Encourage users to ask specific questions about employees, projects, documentation, etc.
-
-Keep responses concise and helpful."""
-
         messages = [
-            self.HumanMessage(content=system_prompt),
+            self.HumanMessage(content=GENERAL_CONVERSATION_SYSTEM_PROMPT),
             self.HumanMessage(content=f"User: {state['user_query']}\n\nRespond naturally and helpfully.")
         ]
 
@@ -283,52 +239,7 @@ Keep responses concise and helpful."""
         print(f"[DATA_QUERY DEBUG 2/8] Added user query to chat history")
 
         # System message describing all available tools
-        system_message = self.HumanMessage(content="""You are an HR assistant with access to 7 tools for searching company data.
-
-**TOOL 1: search_emps_by_key_tool** - Employee information
-Fields: name, role, team, skills, location, timezone, email, jira_username, github_username,
-        slack_handle, availability, years_of_experience, current_sprint_capacity, current_sprint_allocated
-
-**TOOL 2: search_jira_tickets_tool** - JIRA tickets
-Fields: id, summary, description, assignee, reporter, status, priority, story_points,
-        sprint, epic, labels, component, estimated_hours, time_spent_hours, blocked
-
-**TOOL 3: search_deployments_tool** - Deployment history
-Fields: id, service, version, date, status, environment, deployed_by, duration_minutes,
-        rollback_available, health_check_passed, jira_tickets, notes, error_message
-
-**TOOL 4: search_projects_tool** - Projects
-Fields: id, name, key, description, status, lead, team, start_date, target_completion,
-        progress_percentage, budget_hours, consumed_hours, epics, repositories, tech_stack, priority
-
-**TOOL 5: search_sprints_tool** - Sprints
-Fields: id, name, start_date, end_date, status, goal, total_story_points,
-        completed_story_points, team_velocity, tickets
-
-**TOOL 6: search_meetings_tool** - Meetings
-Fields: id, title, type, date, duration_minutes, attendees, agenda, notes, action_items
-Types: sprint-planning, retrospective, standup, technical, security, team-sync, post-mortem
-
-**TOOL 7: search_services_tool** - Services/Microservices
-Fields: id, name, type, owner_team, primary_maintainer, status, uptime_percentage,
-        avg_response_time_ms, tech_stack, dependencies, current_version, deployment_frequency
-
-**OPERATORS** (all tools support these):
-- equals: Exact match (default)
-- greater_than, less_than, greater_equal, less_equal: Numeric comparisons
-- contains: Substring/partial match
-
-**EXAMPLES**:
-- "backend team members": search_emps_by_key_tool(key='team', value='Backend', operator='equals')
-- "open JIRA tickets": search_jira_tickets_tool(key='status', value='Open', operator='equals')
-- "failed deployments": search_deployments_tool(key='status', value='Failed', operator='equals')
-- "active projects": search_projects_tool(key='status', value='active', operator='equals')
-- "Sprint 24 details": search_sprints_tool(key='name', value='Sprint 24', operator='equals')
-- "sprint planning meetings": search_meetings_tool(key='type', value='sprint-planning', operator='equals')
-- "Backend services": search_services_tool(key='owner_team', value='Backend', operator='equals')
-
-IMPORTANT: Choose the appropriate tool based on what data the user is asking for.
-Always format responses clearly with markdown.""")
+        system_message = self.HumanMessage(content=DATA_QUERY_SYSTEM_PROMPT)
 
         # Create messages for the LLM with tool binding
         messages = [system_message] + state["chat_history"].copy()
@@ -366,42 +277,11 @@ Always format responses clearly with markdown.""")
             # Combine all tool results
             if tool_results:
                 combined_results = "\n\n---\n\n".join(tool_results)
-                print(f"[DATA_QUERY DEBUG 7/8] Combined results: {len(combined_results)} chars, sending to LLM for formatting...")
+                print(f"[DATA_QUERY DEBUG 7/8] Combined results: {len(combined_results)} chars, returning raw results for CrewAI formatting...")
 
-                # Create final response with tool results
-                final_messages = messages + [
-                    response,
-                    self.HumanMessage(content=f"Tool results:\n\n{combined_results}")
-                ]
-                final_messages.append(
-                    self.SystemMessage(
-                        content=(
-                            "IMPORTANT: Do NOT call any tools now. "
-                            "You have already received tool results. "
-                            "Your job is ONLY to summarize, organize, or format the provided tool results "
-                            "into a clean, helpful answer for the user. "
-                            "Do NOT request or generate additional tool calls."
-                        )
-                    )
-                )
-
-
-                try:
-                    final_response = await self.llm.ainvoke(final_messages)
-                    response_content = final_response.content if hasattr(final_response, 'content') else str(final_response)
-                    print(f"[DATA_QUERY DEBUG 7.2/8] Final response length: {len(response_content)} chars")
-
-                    # Ensure response is not empty
-                    if not response_content or not response_content.strip():
-                        print(f"[DATA_QUERY WARNING] LLM returned empty response, using tool results directly")
-                        response_content = combined_results
-
-                    state["chat_history"].append(self.AIMessage(content=response_content))
-                    print(f"[DATA_QUERY DEBUG 8/8] Response added to chat history")
-                except Exception as e:
-                    print(f"[DATA_QUERY ERROR] Failed to get final response from LLM: {e}")
-                    state["chat_history"].append(self.AIMessage(content=combined_results))
-                    print(f"[DATA_QUERY DEBUG 8/8] Using tool results directly due to error")
+                # Return raw tool results - CrewAI agent will handle formatting and summarization
+                state["chat_history"].append(self.AIMessage(content=combined_results))
+                print(f"[DATA_QUERY DEBUG 8/8] Raw tool results added to chat history (will be formatted by CrewAI)")
             else:
                 # Strict routing - no results found
                 print(f"[DATA_QUERY DEBUG 8/8] No tool results, returning 'no data found' message")

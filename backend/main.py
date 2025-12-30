@@ -33,6 +33,27 @@ async def lifespan(app: FastAPI):
             error_msg = str(e)
             logger.error(f"Failed to create tables on attempt {attempt}: {error_msg}")
 
+            # Check for authentication errors - don't retry these
+            if "Circuit breaker open" in error_msg or "authentication errors" in error_msg.lower():
+                logger.error("=" * 60)
+                logger.error("AUTHENTICATION ERROR: Circuit breaker is open due to too many failed auth attempts")
+                logger.error("This means your DATABASE_URL credentials are incorrect or need URL encoding.")
+                logger.error("")
+                logger.error("SOLUTIONS:")
+                logger.error("  1. Verify your password in Supabase dashboard")
+                logger.error("  2. If password contains special characters, URL-encode them:")
+                logger.error("     - $ becomes %24")
+                logger.error("     - @ becomes %40")
+                logger.error("     - : becomes %3A")
+                logger.error("     - / becomes %2F")
+                logger.error("     - # becomes %23")
+                logger.error("  3. Wait 5-10 minutes for circuit breaker to reset")
+                logger.error("  4. Check DATABASE_URL format: postgresql://user:password@host:port/dbname")
+                logger.error("=" * 60)
+                # Don't retry auth errors - they won't succeed
+                logger.error("Stopping retries for authentication errors. Please fix DATABASE_URL and restart.")
+                break
+
             # Check for specific Supabase errors
             if "db_termination" in error_msg or "shutdown" in error_msg:
                 logger.error("SUPABASE ERROR: Database pooler is terminating connections. This usually means:")
