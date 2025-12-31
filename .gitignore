@@ -41,3 +41,7 @@ chroma_db/
 *.tmp
 *~
 IMPLEMENTATION_SUMMARY.md
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/README.md

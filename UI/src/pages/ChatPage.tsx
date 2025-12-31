@@ -6,6 +6,7 @@ import InputArea from '../components/chat/InputArea';
 import GuideCards from '../components/chat/GuideCards';
 import DatasetInfoPopup from '../components/chat/DatasetInfoPopup';
 import WebSearchBanner from '../components/chat/WebSearchBanner';
+import DocumentUpload from '../components/chat/DocumentUpload';
 import { chatService, type MessageResponse, type ChatResponse } from '../../services/chat.service';
 import { getAuthToken } from '../../services/api.config';
 
@@ -23,6 +24,7 @@ const ChatPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showGuideCards, setShowGuideCards] = useState(false);
   const [showWebSearchBanner, setShowWebSearchBanner] = useState(true);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -249,6 +251,7 @@ const ChatPage = () => {
           onChatSelect={handleChatSelect}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
+          onUploadDocument={() => setShowDocumentUpload(true)}
           isCreatingChat={isCreatingChat}
           isLoadingChats={isLoadingChats}
         />
@@ -284,6 +287,12 @@ const ChatPage = () => {
 
         {/* Dataset Info Popup - appears as floating widget */}
         <DatasetInfoPopup />
+
+        {/* Document Upload Modal */}
+        <DocumentUpload
+          isOpen={showDocumentUpload}
+          onClose={() => setShowDocumentUpload(false)}
+        />
       </div>
     </div>
   );
