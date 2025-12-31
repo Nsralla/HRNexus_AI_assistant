@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException
+from agents.crew_ai import get_response_formatter_agent
 from schemas.message import MessageCreate, MessageResponse
 from schemas.chat import ChatCreate, ChatUpdate, ChatResponse
 from sqlalchemy.orm import Session
@@ -212,12 +213,16 @@ async def create_message(
         response = await chat_pipeline.run(message_data.content, chat_history)
         logger.info(f"[DEBUG 9/11] Received AI response (length: {len(response)} chars)")
 
+        # send response to crew ai agent for formatting
+        from agents.crew_ai import process_with_agent
+        crew_ai_response = process_with_agent(response)
+        logger.info(f"[DEBUG 10/11] Crew AI response: {crew_ai_response}")
         logger.info(f"[DEBUG 10/11] Creating assistant message in database")
         # Create assistant response
         assistant_response = Message(
             chat_id=message_data.chat_id,
             user_id=user_id,  # Use cached user_id instead of current_user.id
-            content=response,
+            content=crew_ai_response,
             role="assistant"
         )
         db.add(assistant_response)

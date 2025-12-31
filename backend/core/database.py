@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import logging
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,14 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     logger.error("DATABASE_URL environment variable is not set!")
     raise ValueError("DATABASE_URL must be set in environment variables")
+
+# Validate DATABASE_URL format
+try:
+    parsed = urlparse(DATABASE_URL)
+    if not parsed.scheme or not parsed.hostname:
+        logger.warning("DATABASE_URL format may be invalid. Expected: postgresql://user:password@host:port/dbname")
+except Exception as e:
+    logger.warning(f"Could not parse DATABASE_URL: {e}")
 
 logger.info(f"Initializing database connection...")
 logger.info(f"Database host: {DATABASE_URL.split('@')[1].split('/')[0] if '@' in DATABASE_URL else 'unknown'}")
