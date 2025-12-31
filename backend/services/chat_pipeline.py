@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 from typing import TypedDict, TYPE_CHECKING
+from .tavily_search_service import get_tavily_service
+from langchain_core.tools import tool as langchain_tool
 from prompts import (
     INTENT_CLASSIFICATION_PROMPT,
     DOCUMENTATION_QUERY_PROMPT,
@@ -15,7 +17,6 @@ if TYPE_CHECKING:
     from langchain_openai import ChatOpenAI
 
 load_dotenv()
-
 
 class StateAgent(TypedDict):
     user_query: str
@@ -38,6 +39,29 @@ class ChatPipeLine:
             from .meetingsService import search_meetings_tool
             from .servicesService import search_services_tool
 
+            @langchain_tool
+            def search_web_tool(query: str, search_depth: str = "basic") -> str:
+                """Search the web for current information using Tavily.
+                
+                Use this when you need:
+                - Latest news, trends, or current events
+                - Up-to-date statistics or research
+                - Information not in the knowledge base
+                - Current industry standards or best practices
+                
+                Args:
+                    query: Search query (e.g., "latest HR compliance requirements 2025")
+                    search_depth: "basic" (faster) or "advanced" (more thorough)
+                
+                Returns:
+                    Formatted search results with titles, URLs, and content
+                """
+                try:
+                    tavily_service = get_tavily_service()
+                    return tavily_service.search_context(query, search_depth, max_results=5)
+                except Exception as e:
+                    return f"Web search failed: {str(e)}"
+
             # Store for use in methods
             self.HumanMessage = HumanMessage
             self.AIMessage = AIMessage
@@ -57,7 +81,7 @@ class ChatPipeLine:
                 model="mistralai/ministral-8b"  
             )
 
-            # Bind ALL 7 tools to the LLM
+            # Bind ALL 8 tools to the LLM (7 existing + 1 new web search)
             self.llm_with_tools = self.llm.bind_tools([
                 search_emps_by_key_tool,
                 search_jira_tickets_tool,
@@ -65,7 +89,8 @@ class ChatPipeLine:
                 search_projects_tool,
                 search_sprints_tool,
                 search_meetings_tool,
-                search_services_tool
+                search_services_tool,
+                search_web_tool  # NEW: Add web search tool
             ])
 
             # Store tool map for later use
@@ -76,7 +101,8 @@ class ChatPipeLine:
                 "search_projects_tool": search_projects_tool,
                 "search_sprints_tool": search_sprints_tool,
                 "search_meetings_tool": search_meetings_tool,
-                "search_services_tool": search_services_tool
+                "search_services_tool": search_services_tool,
+                "search_web_tool": search_web_tool  # NEW: Add to tool map
             }
 
             # Initialize RAG vector store
@@ -137,6 +163,45 @@ class ChatPipeLine:
             self.vectorstore = None
 
     async def intent_classification(self, state: StateAgent) -> StateAgent:
+        """Classify user query intent into conversation, documentation, data_query, or web_search"""
+        prompt = """Classify the user's query intent into ONE of these categories:
+
+1. "conversation" - For casual interactions:
+   - Greetings (hi, hello, hey, good morning, etc.)
+   - Identity questions (who are you, what are you, what can you do)
+   - Thank you / goodbye messages
+   - General chitchat or off-topic questions
+   - Questions about the assistant itself
+
+2. "documentation" - For questions about company policies/processes:
+   - Policies (code review, escalation, etc.)
+   - Processes (deployment, onboarding, etc.)
+   - Guides (how-to questions, setup instructions)
+   - Team structure and roles
+   - General "how do I..." or "what is the process for..." questions
+
+3. "data_query" - For questions requiring specific internal data:
+   - Employees (who, team members, skills, capacity)
+   - JIRA tickets (status, assignments, sprints, bugs)
+   - Deployments (history, status, versions)
+   - Projects (progress, teams, tech stack)
+   - Sprints (velocity, story points, burndown)
+   - Services/Microservices (status, uptime, performance)
+   - Meetings (sprint planning, retrospectives, attendees)
+
+4. "web_search" - For questions requiring current external information:
+   - Latest industry news, trends, or developments
+   - Current statistics, research, or market data
+   - Recent events, announcements, or regulations
+   - Technology trends or best practices not in documentation
+   - Questions explicitly asking for "latest", "current", "recent", "new"
+   - HR industry trends, compliance updates, legal changes
+   - Competitor analysis or external benchmarking
+
+User Query: {user_query}
+
+Respond with ONLY one word: "conversation", "documentation", "data_query", or "web_search"."""
+
         """Classify user query intent into conversation, documentation, or data_query"""
         try:
             prompt = INTENT_CLASSIFICATION_PROMPT.format(user_query=state["user_query"])
@@ -163,6 +228,8 @@ class ChatPipeLine:
             return "general_conversation"
         elif "documentation" in state["intent"]:
             return "documentation_query"
+        elif "web_search" in state["intent"]:
+            return "web_search_query"  # NEW: Route to web search
         else:
             return "data_query"
 
@@ -238,6 +305,65 @@ class ChatPipeLine:
         state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
         print(f"[DATA_QUERY DEBUG 2/8] Added user query to chat history")
 
+        # System message describing all available tools including web search
+        system_message = self.HumanMessage(content="""You are an HR assistant with access to 8 tools for searching data.
+
+**TOOL 1-7: Internal data tools** (employees, JIRA, deployments, projects, sprints, meetings, services)
+**TOOL 1: search_emps_by_key_tool** - Employee information
+Fields: name, role, team, skills, location, timezone, email, jira_username, github_username,
+        slack_handle, availability, years_of_experience, current_sprint_capacity, current_sprint_allocated
+
+**TOOL 2: search_jira_tickets_tool** - JIRA tickets
+Fields: id, summary, description, assignee, reporter, status, priority, story_points,
+        sprint, epic, labels, component, estimated_hours, time_spent_hours, blocked
+
+**TOOL 3: search_deployments_tool** - Deployment history
+Fields: id, service, version, date, status, environment, deployed_by, duration_minutes,
+        rollback_available, health_check_passed, jira_tickets, notes, error_message
+
+**TOOL 4: search_projects_tool** - Projects
+Fields: id, name, key, description, status, lead, team, start_date, target_completion,
+        progress_percentage, budget_hours, consumed_hours, epics, repositories, tech_stack, priority
+
+**TOOL 5: search_sprints_tool** - Sprints
+Fields: id, name, start_date, end_date, status, goal, total_story_points,
+        completed_story_points, team_velocity, tickets
+
+**TOOL 6: search_meetings_tool** - Meetings
+Fields: id, title, type, date, duration_minutes, attendees, agenda, notes, action_items
+Types: sprint-planning, retrospective, standup, technical, security, team-sync, post-mortem
+
+**TOOL 7: search_services_tool** - Services/Microservices
+Fields: id, name, type, owner_team, primary_maintainer, status, uptime_percentage,
+        avg_response_time_ms, tech_stack, dependencies, current_version, deployment_frequency
+
+**TOOL 8: search_web_tool** - Web search for external information
+Use when you need current information not available in internal systems:
+- Latest industry news, trends, or developments
+- Current regulations, compliance requirements, or legal updates
+- External research, statistics, or benchmarking data
+- Technology best practices or standards
+- Market analysis or competitor information
+
+Args:
+- query: Search query string (e.g., "latest HR compliance requirements 2025")
+- search_depth: "basic" (faster) or "advanced" (more comprehensive)
+
+**OPERATORS** (all tools support these):
+- equals: Exact match (default)
+- greater_than, less_than, greater_equal, less_equal: Numeric comparisons
+- contains: Substring/partial match
+
+**EXAMPLES**:
+- "backend team members": search_emps_by_key_tool(key='team', value='Backend', operator='equals')
+- "open JIRA tickets": search_jira_tickets_tool(key='status', value='Open', operator='equals')
+- "failed deployments": search_deployments_tool(key='status', value='Failed', operator='equals')
+- "active projects": search_projects_tool(key='status', value='active', operator='equals')
+- "Sprint 24 details": search_sprints_tool(key='name', value='Sprint 24', operator='equals')
+- "sprint planning meetings": search_meetings_tool(key='type', value='sprint-planning', operator='equals')
+- "Backend services": search_services_tool(key='owner_team', value='Backend', operator='equals')
+
+**IMPORTANT**: Use internal tools FIRST for company data. Only use web search for external/current information.""")
         # System message describing all available tools
         system_message = self.HumanMessage(content=DATA_QUERY_SYSTEM_PROMPT)
 
@@ -293,6 +419,48 @@ class ChatPipeLine:
 
         return state
 
+    async def web_search_query(self, state: StateAgent) -> StateAgent:
+        """Handle queries requiring web search for current information"""
+        print(f"[WEB_SEARCH DEBUG 1/5] Starting web search for: {state['user_query'][:50]}...")
+        
+        state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
+        print(f"[WEB_SEARCH DEBUG 2/5] Added user query to chat history")
+
+        try:
+            # Use the web search tool
+            print(f"[WEB_SEARCH DEBUG 3/5] Calling Tavily search...")
+            tavily_service = get_tavily_service()
+            search_context = tavily_service.search_context(
+                query=state["user_query"],
+                search_depth="advanced",
+                max_results=5
+            )
+            print(f"[WEB_SEARCH DEBUG 4/5] Search returned {len(search_context)} chars")
+
+            # Generate answer using LLM with search results
+            prompt = f"""Using the following web search results, answer the user's question.
+Be informative and cite sources when appropriate. Use markdown formatting for clarity.
+
+Search Results:
+{search_context}
+
+User Question: {state["user_query"]}
+
+Provide a comprehensive answer based on the search results above. Include relevant URLs for sources."""
+
+            response = await self.llm.ainvoke([self.HumanMessage(content=prompt)])
+            state["chat_history"].append(self.AIMessage(content=response.content))
+            print(f"[WEB_SEARCH DEBUG 5/5] Response generated and added to history")
+
+        except Exception as e:
+            error_message = f"Error performing web search: {str(e)}"
+            print(f"[ERROR] {error_message}")
+            state["chat_history"].append(
+                self.AIMessage(content="I encountered an error searching the web. Please try rephrasing your question.")
+            )
+
+        return state
+
     def init_graph(self):
         """Initialize and compile the workflow graph"""
         # Add nodes
@@ -300,6 +468,7 @@ class ChatPipeLine:
         self.workflow.add_node("general_conversation", self.general_conversation)
         self.workflow.add_node("documentation_query", self.documentation_query)
         self.workflow.add_node("data_query", self.data_query)
+        self.workflow.add_node("web_search_query", self.web_search_query)  # NEW
 
         # Set entry point
         self.workflow.set_entry_point("intent_classification")
@@ -311,7 +480,8 @@ class ChatPipeLine:
             {
                 "general_conversation": "general_conversation",
                 "documentation_query": "documentation_query",
-                "data_query": "data_query"
+                "data_query": "data_query",
+                "web_search_query": "web_search_query"  # NEW
             }
         )
 
@@ -319,6 +489,7 @@ class ChatPipeLine:
         self.workflow.add_edge("general_conversation", self.END)
         self.workflow.add_edge("documentation_query", self.END)
         self.workflow.add_edge("data_query", self.END)
+        self.workflow.add_edge("web_search_query", self.END)  # NEW
 
         # Compile the graph
         self.compiled_graph = self.workflow.compile()

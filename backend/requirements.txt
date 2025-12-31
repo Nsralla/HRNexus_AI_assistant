@@ -20,5 +20,6 @@ langchain-chroma
 langchain-cohere
 langchain-text-splitters
 fastmcp
+tavily-python==0.3.9
 crewai
 pyyaml
