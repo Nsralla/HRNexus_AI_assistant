@@ -123,15 +123,27 @@ def create_response_formatter_agent(config: Optional[dict] = None, llm: Optional
     
     # Create LLM if not provided
     if llm is None:
-        # CrewAI uses litellm which requires provider prefix for OpenRouter models
-        model_name = os.getenv("CREW_MODEL", "openrouter/xiaomi/mimo-v2-flash:free")
-        # Ensure model has openrouter prefix if not already present
+        # Use OPENROUTER_API_KEY as fallback if CREW_KEY is not set
+        api_key = os.getenv("CREW_KEY") or os.getenv("OPENROUTER_API_KEY")
+        
+        if not api_key:
+            logger.error("No API key found! Set CREW_KEY or OPENROUTER_API_KEY environment variable.")
+            raise ValueError("API key required for CrewAI agent. Set CREW_KEY or OPENROUTER_API_KEY.")
+        
+        # Get model name from env or use a reliable default
+        # For CrewAI with OpenRouter, we need the openrouter/ prefix for litellm
+        model_name = os.getenv("CREW_MODEL", "mistralai/ministral-8b")
+        
+        # Ensure openrouter prefix is present (required by litellm)
         if not model_name.startswith("openrouter/"):
             model_name = f"openrouter/{model_name}"
         
+        logger.info(f"Creating CrewAI LLM with model: {model_name}")
+        
+        # Set OpenRouter API key as environment variable for litellm
+        os.environ["OPENROUTER_API_KEY"] = api_key
+        
         llm = ChatOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("CREW_KEY"),
             model=model_name,
             temperature=0.3,
         )

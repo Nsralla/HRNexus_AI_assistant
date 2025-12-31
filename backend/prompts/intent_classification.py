@@ -27,7 +27,19 @@ INTENT_CLASSIFICATION_PROMPT = """Classify the user's query intent into ONE of t
    - Services/Microservices (status, uptime, performance, tech stack, ownership)
    - Meetings (sprint planning, retrospectives, standups, attendees, action items)
 
+
+
+4. "web_search" - For questions requiring current external information:
+   - Latest industry news, trends, or developments
+   - Current statistics, research, or market data
+   - Recent events, announcements, or regulations
+   - Technology trends or best practices not in documentation
+   - Questions explicitly asking for "latest", "current", "recent", "new"
+   - HR industry trends, compliance updates, legal changes
+   - Competitor analysis or external benchmarking
+
+
 User Query: {user_query}
 
-Respond with ONLY one word: "conversation", "documentation", or "data_query"."""
+Respond with ONLY one word: "conversation", "documentation", "data_query" or "web_search"."""
 

@@ -163,45 +163,6 @@ class ChatPipeLine:
             self.vectorstore = None
 
     async def intent_classification(self, state: StateAgent) -> StateAgent:
-        """Classify user query intent into conversation, documentation, data_query, or web_search"""
-        prompt = """Classify the user's query intent into ONE of these categories:
-
-1. "conversation" - For casual interactions:
-   - Greetings (hi, hello, hey, good morning, etc.)
-   - Identity questions (who are you, what are you, what can you do)
-   - Thank you / goodbye messages
-   - General chitchat or off-topic questions
-   - Questions about the assistant itself
-
-2. "documentation" - For questions about company policies/processes:
-   - Policies (code review, escalation, etc.)
-   - Processes (deployment, onboarding, etc.)
-   - Guides (how-to questions, setup instructions)
-   - Team structure and roles
-   - General "how do I..." or "what is the process for..." questions
-
-3. "data_query" - For questions requiring specific internal data:
-   - Employees (who, team members, skills, capacity)
-   - JIRA tickets (status, assignments, sprints, bugs)
-   - Deployments (history, status, versions)
-   - Projects (progress, teams, tech stack)
-   - Sprints (velocity, story points, burndown)
-   - Services/Microservices (status, uptime, performance)
-   - Meetings (sprint planning, retrospectives, attendees)
-
-4. "web_search" - For questions requiring current external information:
-   - Latest industry news, trends, or developments
-   - Current statistics, research, or market data
-   - Recent events, announcements, or regulations
-   - Technology trends or best practices not in documentation
-   - Questions explicitly asking for "latest", "current", "recent", "new"
-   - HR industry trends, compliance updates, legal changes
-   - Competitor analysis or external benchmarking
-
-User Query: {user_query}
-
-Respond with ONLY one word: "conversation", "documentation", "data_query", or "web_search"."""
-
         """Classify user query intent into conversation, documentation, or data_query"""
         try:
             prompt = INTENT_CLASSIFICATION_PROMPT.format(user_query=state["user_query"])
@@ -305,65 +266,6 @@ Respond with ONLY one word: "conversation", "documentation", "data_query", or "w
         state["chat_history"].append(self.HumanMessage(content=state["user_query"]))
         print(f"[DATA_QUERY DEBUG 2/8] Added user query to chat history")
 
-        # System message describing all available tools including web search
-        system_message = self.HumanMessage(content="""You are an HR assistant with access to 8 tools for searching data.
-
-**TOOL 1-7: Internal data tools** (employees, JIRA, deployments, projects, sprints, meetings, services)
-**TOOL 1: search_emps_by_key_tool** - Employee information
-Fields: name, role, team, skills, location, timezone, email, jira_username, github_username,
-        slack_handle, availability, years_of_experience, current_sprint_capacity, current_sprint_allocated
-
-**TOOL 2: search_jira_tickets_tool** - JIRA tickets
-Fields: id, summary, description, assignee, reporter, status, priority, story_points,
-        sprint, epic, labels, component, estimated_hours, time_spent_hours, blocked
-
-**TOOL 3: search_deployments_tool** - Deployment history
-Fields: id, service, version, date, status, environment, deployed_by, duration_minutes,
-        rollback_available, health_check_passed, jira_tickets, notes, error_message
-
-**TOOL 4: search_projects_tool** - Projects
-Fields: id, name, key, description, status, lead, team, start_date, target_completion,
-        progress_percentage, budget_hours, consumed_hours, epics, repositories, tech_stack, priority
-
-**TOOL 5: search_sprints_tool** - Sprints
-Fields: id, name, start_date, end_date, status, goal, total_story_points,
-        completed_story_points, team_velocity, tickets
-
-**TOOL 6: search_meetings_tool** - Meetings
-Fields: id, title, type, date, duration_minutes, attendees, agenda, notes, action_items
-Types: sprint-planning, retrospective, standup, technical, security, team-sync, post-mortem
-
-**TOOL 7: search_services_tool** - Services/Microservices
-Fields: id, name, type, owner_team, primary_maintainer, status, uptime_percentage,
-        avg_response_time_ms, tech_stack, dependencies, current_version, deployment_frequency
-
-**TOOL 8: search_web_tool** - Web search for external information
-Use when you need current information not available in internal systems:
-- Latest industry news, trends, or developments
-- Current regulations, compliance requirements, or legal updates
-- External research, statistics, or benchmarking data
-- Technology best practices or standards
-- Market analysis or competitor information
-
-Args:
-- query: Search query string (e.g., "latest HR compliance requirements 2025")
-- search_depth: "basic" (faster) or "advanced" (more comprehensive)
-
-**OPERATORS** (all tools support these):
-- equals: Exact match (default)
-- greater_than, less_than, greater_equal, less_equal: Numeric comparisons
-- contains: Substring/partial match
-
-**EXAMPLES**:
-- "backend team members": search_emps_by_key_tool(key='team', value='Backend', operator='equals')
-- "open JIRA tickets": search_jira_tickets_tool(key='status', value='Open', operator='equals')
-- "failed deployments": search_deployments_tool(key='status', value='Failed', operator='equals')
-- "active projects": search_projects_tool(key='status', value='active', operator='equals')
-- "Sprint 24 details": search_sprints_tool(key='name', value='Sprint 24', operator='equals')
-- "sprint planning meetings": search_meetings_tool(key='type', value='sprint-planning', operator='equals')
-- "Backend services": search_services_tool(key='owner_team', value='Backend', operator='equals')
-
-**IMPORTANT**: Use internal tools FIRST for company data. Only use web search for external/current information.""")
         # System message describing all available tools
         system_message = self.HumanMessage(content=DATA_QUERY_SYSTEM_PROMPT)
 

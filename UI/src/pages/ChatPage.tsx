@@ -5,6 +5,7 @@ import ChatArea from '../components/chat/ChatArea';
 import InputArea from '../components/chat/InputArea';
 import GuideCards from '../components/chat/GuideCards';
 import DatasetInfoPopup from '../components/chat/DatasetInfoPopup';
+import WebSearchBanner from '../components/chat/WebSearchBanner';
 import { chatService, type MessageResponse, type ChatResponse } from '../../services/chat.service';
 import { getAuthToken } from '../../services/api.config';
 
@@ -21,6 +22,7 @@ const ChatPage = () => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGuideCards, setShowGuideCards] = useState(false);
+  const [showWebSearchBanner, setShowWebSearchBanner] = useState(true);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -212,6 +214,12 @@ const ChatPage = () => {
 
   return (
     <div className="h-screen flex overflow-hidden bg-neutral">
+      {/* Web Search Banner - New Feature Notification */}
+      <WebSearchBanner
+        isVisible={showWebSearchBanner}
+        onDismiss={() => setShowWebSearchBanner(false)}
+      />
+
       {/* Error Banner */}
       {error && (
         <div className="fixed top-0 left-0 right-0 bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between z-50">
@@ -246,9 +254,8 @@ const ChatPage = () => {
         />
 
         <main
-          className={`flex-grow flex flex-col w-full overflow-hidden transition-all duration-300 ${
-            leftSidebarOpen ? 'ml-72' : 'ml-0'
-          }`}
+          className={`flex-grow flex flex-col w-full overflow-hidden transition-all duration-300 ${leftSidebarOpen ? 'ml-72' : 'ml-0'
+            }`}
         >
           {isLoadingChats || isLoadingMessages ? (
             <div className="flex-1 flex items-center justify-center">
