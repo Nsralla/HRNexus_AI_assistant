@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import importlib
+from services.tavily_search_service import get_tavily_service
 
 # Import fastmcp while avoiding circular import with this module name 'mcp'
 _script_dir = Path(__file__).resolve().parent
@@ -241,6 +242,106 @@ def run_chat_pipeline(query: str, chat_history: Optional[List[Dict[str, str]]] =
 		logger.error(f"run_chat_pipeline failed: {e}")
 		raise
 
+@mcp.tool
+def global_web_search(
+    query: str,
+    search_depth: str = "basic",
+    max_results: int = 5,
+    include_domains: str = "",
+    exclude_domains: str = ""
+) -> Dict[str, Any]:
+    """Search the web globally using Tavily API for up-to-date information.
+
+    Use this tool when you need current information from the internet, such as:
+    - Latest industry news, trends, or developments
+    - Current statistics, data, or research findings
+    - Information about recent events or announcements
+    - Technical documentation or best practices
+    - Competitor analysis or market research
+    - HR industry trends and compliance updates
+
+    Args:
+        query: The search query (e.g., "latest HR technology trends 2025")
+        search_depth: Search thoroughness - "basic" (faster, cheaper) or "advanced" (more comprehensive)
+        max_results: Number of results to return (1-10, default: 5)
+        include_domains: Comma-separated list of domains to prioritize (e.g., "shrm.org,hbr.org")
+        exclude_domains: Comma-separated list of domains to exclude (e.g., "example.com")
+
+    Returns:
+        Dictionary with search results including titles, URLs, content snippets, and relevance scores
+
+    Examples:
+        - To find latest HR compliance laws: query="2025 HR compliance requirements USA"
+        - To research AI in HR: query="artificial intelligence recruitment tools", search_depth="advanced"
+        - To find SHRM resources: query="employee engagement best practices", include_domains="shrm.org"
+    """
+    logger.info(f"TOOL CALL: global_web_search(query='{query[:60]}...', depth={search_depth}, max={max_results})")
+    
+    try:
+        tavily_service = get_tavily_service()
+        
+        # Parse domain filters
+        include_list = [d.strip() for d in include_domains.split(",") if d.strip()]
+        exclude_list = [d.strip() for d in exclude_domains.split(",") if d.strip()]
+        
+        # Perform search
+        result = tavily_service.search(
+            query=query,
+            search_depth=search_depth,
+            max_results=max_results,
+            include_domains=include_list if include_list else None,
+            exclude_domains=exclude_list if exclude_list else None
+        )
+        
+        logger.info(f"TOOL RESULT: global_web_search returned {len(result.get('results', []))} results")
+        return result
+        
+    except Exception as e:
+        logger.error(f"global_web_search failed: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "results": []
+        }
+
+
+@mcp.tool
+def search_for_context(query: str, search_depth: str = "advanced") -> str:
+    """Search the web and return formatted context suitable for LLM analysis.
+
+    This tool returns search results as a formatted text block that can be used
+    as context for answering questions. It's optimized for providing comprehensive
+    information to the AI assistant.
+
+    Args:
+        query: The search query
+        search_depth: "basic" or "advanced" (default: "advanced" for better context)
+
+    Returns:
+        Formatted string containing search results with titles, URLs, and content snippets
+
+    Examples:
+        - To get context about a topic: query="what is employee net promoter score"
+        - To research HR trends: query="remote work policies 2025", search_depth="advanced"
+    """
+    logger.info(f"TOOL CALL: search_for_context(query='{query[:60]}...')")
+    
+    try:
+        tavily_service = get_tavily_service()
+        context = tavily_service.search_context(
+            query=query,
+            search_depth=search_depth,
+            max_results=5
+        )
+        
+        logger.info(f"TOOL RESULT: search_for_context returned {len(context)} characters")
+        return context
+        
+    except Exception as e:
+        logger.error(f"search_for_context failed: {e}")
+        return f"Search failed: {str(e)}"
+
+
 
 @mcp.tool
 def get_server_info() -> Dict[str, Any]:
@@ -254,11 +355,13 @@ def get_server_info() -> Dict[str, Any]:
 		"search_deployments",
 		"search_sprints",
 		"search_meetings",
+		"global_web_search",
+        "search_for_context",
 		"run_chat_pipeline",
 	]
 	info = {
 		"name": "hrnexus-mcp-server",
-		"version": "0.1.0",
+		"version": "0.2.0",
 		"description": "MCP server exposing HRNexus project tools and resources",
 		"tools": tools,
 	}
