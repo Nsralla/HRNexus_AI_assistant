@@ -97,26 +97,45 @@ const ChatArea = ({ messages: apiMessages = [], isLoading = false }: ChatAreaPro
                     }`}
                   >
                     {message.type === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none markdown-content">
+                      <div className="prose prose-sm max-w-none">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({children}) => <p className="text-sm leading-relaxed mb-2 last:mb-0">{children}</p>,
-                            strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
-                            ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
-                            li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
-                            h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                            h2: ({children}) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                            h3: ({children}) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                            p: ({children}) => <p className="text-sm leading-relaxed mb-3 text-gray-700 last:mb-0">{children}</p>,
+                            strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
+                            em: ({children}) => <em className="italic text-gray-700">{children}</em>,
+                            ul: ({children}) => <ul className="list-disc list-outside ml-4 space-y-1 my-3">{children}</ul>,
+                            ol: ({children}) => <ol className="list-decimal list-outside ml-4 space-y-1 my-3">{children}</ol>,
+                            li: ({children}) => <li className="text-sm leading-relaxed text-gray-700 pl-1">{children}</li>,
+                            h1: ({children}) => <h1 className="text-xl font-bold mb-3 mt-4 text-gray-900 border-b border-gray-200 pb-2 first:mt-0">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-lg font-bold mb-2 mt-4 text-gray-900 first:mt-0">{children}</h2>,
+                            h3: ({children}) => <h3 className="text-base font-semibold mb-2 mt-3 text-gray-800 first:mt-0">{children}</h3>,
+                            h4: ({children}) => <h4 className="text-sm font-semibold mb-1 mt-2 text-gray-800">{children}</h4>,
+                            blockquote: ({children}) => (
+                              <blockquote className="border-l-4 border-accent pl-4 py-2 my-3 bg-blue-50 rounded-r">
+                                {children}
+                              </blockquote>
+                            ),
+                            hr: () => <hr className="my-4 border-gray-300" />,
+                            a: ({href, children}) => (
+                              <a 
+                                href={href} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-accent hover:text-purple-600 underline font-medium"
+                              >
+                                {children}
+                              </a>
+                            ),
                             table: ({children}) => (
-                              <div className="overflow-x-auto my-3">
-                                <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                              <div className="overflow-x-auto my-4 rounded-lg border border-gray-200">
+                                <table className="min-w-full divide-y divide-gray-200">
                                   {children}
                                 </table>
                               </div>
                             ),
                             thead: ({children}) => (
-                              <thead className="bg-gray-50">
+                              <thead className="bg-gray-100">
                                 {children}
                               </thead>
                             ),
@@ -126,32 +145,37 @@ const ChatArea = ({ messages: apiMessages = [], isLoading = false }: ChatAreaPro
                               </tbody>
                             ),
                             tr: ({children}) => (
-                              <tr className="hover:bg-gray-50">
+                              <tr className="hover:bg-gray-50 transition-colors">
                                 {children}
                               </tr>
                             ),
                             th: ({children}) => (
-                              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 {children}
                               </th>
                             ),
                             td: ({children}) => (
-                              <td className="px-4 py-2 text-sm text-gray-700">
+                              <td className="px-4 py-3 text-sm text-gray-700 whitespace-normal">
                                 {children}
                               </td>
                             ),
                             code: ({children, className}) => {
                               const isInline = !className?.includes('language-');
                               return isInline ? (
-                                <code className="px-1.5 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono">
+                                <code className="px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded text-xs font-mono border border-pink-200">
                                   {children}
                                 </code>
                               ) : (
-                                <code className="block p-3 bg-gray-50 rounded-lg text-xs font-mono overflow-x-auto">
+                                <code className="block p-4 bg-gray-900 text-gray-100 rounded-lg text-xs font-mono overflow-x-auto my-3 border border-gray-700">
                                   {children}
                                 </code>
                               );
-                            }
+                            },
+                            pre: ({children}) => (
+                              <pre className="my-3 rounded-lg overflow-hidden">
+                                {children}
+                              </pre>
+                            ),
                           }}
                         >
                           {message.text}
