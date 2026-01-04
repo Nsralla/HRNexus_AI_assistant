@@ -465,6 +465,325 @@ HR Nexus is a comprehensive AI assistant that helps employees and HR staff with:
 
 ### Tool Invocation Flow
 
+## 🔌 MCP (Model Context Protocol) Integration
+
+### What is MCP?
+
+**MCP (Model Context Protocol)** is a standardized protocol developed by Anthropic that allows AI applications to connect to external data sources and tools. Think of it as a universal adapter that lets Claude (and other AI models) interact with your custom tools, databases, and APIs in a structured way.
+
+### MCP in Action
+
+Here's a real example of Claude Desktop using the HRNexus MCP server to query employee skills:
+
+![HRNexus MCP Integration with Claude Desktop](image.png)
+
+*Claude Desktop successfully connects to HRNexus MCP server and retrieves all employee skills data, demonstrating the seamless integration between AI assistants and custom business tools.*
+
+### HRNexus MCP Server
+
+HR Nexus implements a custom MCP server (`backend/core/mcp.py`) that exposes all the system's capabilities through a standardized interface. This allows external AI clients (like Claude Desktop, Cline, or other MCP-compatible tools) to directly access your HR data and workflows.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                      EXTERNAL AI CLIENTS                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌───────────┐ │
+│  │   Claude    │  │    Cline    │  │   Custom     │  │   Other   │ │
+│  │  Desktop    │  │   VS Code   │  │     Apps     │  │  MCP Apps │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬───────┘  └─────┬─────┘ │
+└─────────┼─────────────────┼─────────────────┼────────────────┼───────┘
+          │                 │                 │                │
+          └─────────────────┴─────────────────┴────────────────┘
+                                    │
+                    ┌───────────────▼────────────────┐
+                    │   MCP PROTOCOL (STDIO/SSE)     │
+                    └───────────────┬────────────────┘
+                                    │
+┌───────────────────────────────────▼───────────────────────────────────┐
+│                    HRNEXUS MCP SERVER (FastMCP)                        │
+│                         backend/core/mcp.py                            │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                         TOOLS (9 Available)                      │  │
+│  │  ┌────────────────────┐  ┌────────────────────┐                │  │
+│  │  │ search_employees   │  │ search_projects    │                │  │
+│  │  │ search_services    │  │ search_jira_tickets│                │  │
+│  │  │ search_deployments │  │ search_sprints     │                │  │
+│  │  │ search_meetings    │  │ global_web_search  │                │  │
+│  │  │ search_for_context │  │ run_chat_pipeline  │                │  │
+│  │  └────────────────────┘  └────────────────────┘                │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                    RESOURCES (4 Available)                       │  │
+│  │  • config://server-info    - Server configuration                │  │
+│  │  • kb://list               - List knowledge base docs            │  │
+│  │  • kb://document/{name}    - Get specific KB document            │  │
+│  │  • dataset://summary       - Dataset statistics                  │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                     PROMPTS (2 Available)                        │  │
+│  │  • format_prompt          - Apply template transformations       │  │
+│  │  • format_search_results  - Format search output                 │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────┬───────────────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│                      HRNEXUS BACKEND SERVICES                          │
+│  • Employee Service     • Project Service      • JIRA Service         │
+│  • Sprint Service       • Deployment Service   • Meeting Service      │
+│  • Tavily Search        • Chat Pipeline        • ChromaDB RAG         │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### MCP Tools Available
+
+#### 1. **Data Search Tools** (7 tools)
+
+These tools allow direct querying of HR data with flexible operators:
+
+```python
+# Employee Search
+search_employees(key="role", value="Backend Lead", operator="equals")
+# Returns: List of employees matching criteria
+
+# Common keys: role, team, skills, location, name, availability,
+#              years_of_experience, current_sprint_capacity
+
+# Project Search
+search_projects(key="status", value="active", operator="equals")
+# Common keys: status, lead, priority, team, tech_stack, progress_percentage
+
+# JIRA Tickets Search
+search_jira_tickets(key="assignee", value="Ahmed Ali", operator="equals")
+# Common keys: status, assignee, priority, sprint, epic, labels
+
+# Services Search
+search_services(key="owner_team", value="Backend", operator="equals")
+# Common keys: name, type, owner_team, status, tech_stack, uptime_percentage
+
+# Deployments Search
+search_deployments(key="environment", value="production", operator="equals")
+# Common keys: service, status, environment, version, deployed_by
+
+# Sprints Search
+search_sprints(key="status", value="active", operator="equals")
+# Common keys: name, status, team_velocity, total_story_points
+
+# Meetings Search
+search_meetings(key="type", value="standup", operator="equals")
+# Common keys: type, date, attendees, title
+```
+
+**Supported Operators:**
+- `equals` - Exact match (default)
+- `contains` - Substring match
+- `greater_than` / `gt` - Numeric comparison
+- `less_than` / `lt` - Numeric comparison
+- `greater_equal` / `gte` - Numeric comparison
+- `less_equal` / `lte` - Numeric comparison
+
+#### 2. **Web Search Tools** (2 tools)
+
+```python
+# Global Web Search (structured results)
+global_web_search(
+    query="latest HR compliance requirements 2025",
+    search_depth="advanced",  # or "basic"
+    max_results=5,
+    include_domains="shrm.org,hbr.org",  # optional
+    exclude_domains="example.com"         # optional
+)
+# Returns: {success, query, results, answer, images, response_time}
+
+# Search for Context (formatted text)
+search_for_context(
+    query="what is employee net promoter score",
+    search_depth="advanced"
+)
+# Returns: Formatted text suitable for LLM context
+```
+
+#### 3. **Chat Pipeline Tool**
+
+```python
+# Execute full HRNexus chat pipeline
+run_chat_pipeline(
+    query="Who is on the backend team?",
+    chat_history=[
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi! How can I help?"}
+    ]
+)
+# Returns: Complete assistant response with intent routing, tools, and RAG
+```
+
+### MCP Resources
+
+Resources provide read-only access to system information:
+
+```python
+# Server Configuration
+config://server-info
+# Returns: {version, name, transforms, prompts}
+
+# List Knowledge Base Documents
+kb://list
+# Returns: ["deployment_process.md", "code_review_policy.md", ...]
+
+# Get Specific KB Document
+kb://document/deployment_process.md
+# Returns: {name, content}
+
+# Dataset Summary
+dataset://summary
+# Returns: {employees: 10, projects: 5, jira_tickets: 50, ...}
+```
+
+### MCP Prompts
+
+Prompts provide pre-formatted templates for common tasks:
+
+```python
+# Format with template
+format_prompt(prompt_name="summarize", text="Long text here...")
+# Available: summarize, explain, simplify, employee_summary,
+#            transform_uppercase, transform_lowercase, transform_reverse
+
+# Format search results
+format_search_results(query="backend engineers", results=[...])
+# Returns: Formatted readable summary
+```
+
+### Running the MCP Server
+
+#### Standalone Mode
+
+```bash
+cd backend
+python core/mcp.py
+```
+
+The server runs in STDIO mode, communicating via standard input/output according to the MCP protocol specification.
+
+#### Configuration for Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "hrnexus": {
+      "command": "python",
+      "args": ["/absolute/path/to/backend/core/mcp.py"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/backend",
+        "DATABASE_URL": "your_database_url",
+        "OPENAI_API_KEY": "your_openai_key",
+        "COHERE_API_KEY": "your_cohere_key",
+        "TAVILY_API_KEY": "your_tavily_key"
+      }
+    }
+  }
+}
+```
+
+#### Configuration for Cline (VS Code)
+
+Add to VS Code settings or Cline configuration:
+
+```json
+{
+  "cline.mcpServers": {
+    "hrnexus": {
+      "command": "python",
+      "args": ["backend/core/mcp.py"],
+      "cwd": "/path/to/HRNexus_AI_assistant"
+    }
+  }
+}
+```
+
+### MCP Use Cases
+
+
+
+#### 1. **Direct Data Queries via Claude Desktop**
+
+```
+User: "Show me all senior backend engineers"
+
+Claude (using MCP):
+  → Calls search_employees(key="role", value="Senior", operator="contains")
+  → AND search_employees(key="team", value="Backend", operator="equals")
+  → Synthesizes natural response with employee details
+```
+
+#### 2. **Complex Workflow Automation**
+
+```
+User: "Analyze sprint velocity for the last 3 sprints"
+
+Claude (using MCP):
+  → Calls search_sprints(key="status", value="completed", operator="equals")
+  → Processes sprint data
+  → Calculates trends
+  → Generates analysis report
+```
+
+#### 3. **Real-time Information Integration**
+
+```
+User: "What are the latest HR tech trends and how do they apply to our team?"
+
+Claude (using MCP):
+  → Calls global_web_search(query="HR technology trends 2025")
+  → Calls search_employees(key="team", value="HR", operator="equals")
+  → Combines external research with internal team data
+  → Provides personalized recommendations
+```
+
+#### 4. **Full Chat Pipeline Integration**
+
+```
+User: "Run a complete analysis of our backend team"
+
+Claude (using MCP):
+  → Calls run_chat_pipeline(query="analyze backend team")
+  → HRNexus pipeline handles intent, tools, RAG
+  → Returns comprehensive formatted response
+```
+
+### MCP Server Features
+
+- **FastMCP Framework**: Built on FastMCP for easy tool/resource/prompt definition
+- **Comprehensive Logging**: All tool calls logged to `mcp.log`
+- **Error Handling**: Graceful failure with detailed error messages
+- **Lazy Loading**: Services imported on-demand to avoid startup delays
+- **Type Safety**: Full type hints for all tools and parameters
+- **Standardized Protocol**: Compatible with all MCP clients
+
+### Benefits of MCP Integration
+
+1. **Universal Access**: Any MCP-compatible client can use HRNexus tools
+2. **No API Development**: No need to build REST APIs for external access
+3. **Standardized Interface**: Consistent protocol across different clients
+4. **Direct Tool Access**: Skip the web interface, go straight to the data
+5. **Composable Workflows**: Combine multiple tools in complex chains
+6. **Context Preservation**: Chat history and context maintained across calls
+7. **Extensibility**: Easy to add new tools, resources, and prompts
+
+### MCP vs FastAPI Endpoints
+
+| Feature | MCP Server | FastAPI API |
+|---------|-----------|-------------|
+| **Purpose** | AI client integration | Web application backend |
+| **Protocol** | STDIO/SSE (MCP) | HTTP/REST |
+| **Clients** | Claude, Cline, MCP tools | Web browsers, mobile apps |
+| **Authentication** | Environment-based | JWT tokens |
+| **Use Case** | AI-to-tool integration | User-facing application |
+| **Streaming** | Native support | SSE for chat |
+
+**Both systems can run simultaneously**, serving different purposes in the ecosystem!
+
 ## 📁 Project Structure
 
 ```
